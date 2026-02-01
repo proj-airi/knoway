@@ -20,6 +20,7 @@ type Config struct {
 	KubeConfig string `yaml:"kubeConfig" json:"kubeConfig"`
 
 	StaticListeners []map[string]interface{} `yaml:"staticListeners" json:"staticListeners"`
+	StaticClusters  []map[string]interface{} `yaml:"staticClusters" json:"staticClusters"`
 }
 
 // LoadConfig loads the configuration from the specified YAML file

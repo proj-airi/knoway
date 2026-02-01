@@ -19,6 +19,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log/slog"
 	"os"
 	"time"
@@ -35,6 +36,7 @@ import (
 
 	knowaydevv1alpha1 "knoway.dev/api/v1alpha1"
 
+	clusters "knoway.dev/api/clusters/v1alpha1"
 	"knoway.dev/cmd/gateway"
 	"knoway.dev/cmd/server"
 	"knoway.dev/config"
@@ -59,6 +61,7 @@ func main() {
 	var listenerAddr string
 	var adminAddr string
 	var configPath string
+	var staticClusterOnly bool
 
 	flag.StringVar(&listenerAddr, "gateway-listener-address", ":8080", "The address the gateway listener binds to.")
 	flag.StringVar(&adminAddr, "admin-listener-address", "127.0.0.1:9080", "The address the admin listener binds to.")
@@ -66,6 +69,7 @@ func main() {
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metric endpoint binds to. "+
 		"Use the port :8080. If not set, it will be 0 in order to disable the metrics server")
 	flag.StringVar(&configPath, "config", "config/config.yaml", "Path to the configuration file")
+	flag.BoolVar(&staticClusterOnly, "static-cluster-only", false, "If true, only use static cluster configuration and disable the controller.")
 	flag.Parse()
 
 	cfg, err := config.LoadConfig(configPath)
@@ -91,6 +95,19 @@ func main() {
 	if devStaticServer {
 		app.Add(func(_ context.Context, lifeCycle bootkit.LifeCycle) error {
 			return gateway.StaticRegisterClusters(gateway.StaticClustersConfig, lifeCycle)
+		})
+	} else if staticClusterOnly {
+		staticClusters, err := toClusterMap(cfg.StaticClusters)
+		if err != nil {
+			slog.Error("Failed to load static clusters", "error", err)
+			return
+		}
+		if len(staticClusters) == 0 {
+			slog.Warn("No static clusters configured", "config", configPath)
+		}
+
+		app.Add(func(_ context.Context, lifeCycle bootkit.LifeCycle) error {
+			return gateway.StaticRegisterClusters(staticClusters, lifeCycle)
 		})
 	} else {
 		// Start the server and handle errors gracefully
@@ -127,4 +144,27 @@ func toAnySlice(cfg []map[string]interface{}) []*anypb.Any {
 	}
 
 	return anys
+}
+
+func toClusterMap(staticCluster []map[string]interface{}) (map[string]*clusters.Cluster, error) {
+	clusterMap := make(map[string]*clusters.Cluster, len(staticCluster))
+
+	for i, c := range staticCluster {
+		bs, err := yaml.Marshal(c)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal static cluster %d: %w", i, err)
+		}
+
+		cluster := new(clusters.Cluster)
+		if err := protoyaml.Unmarshal(bs, cluster); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal static cluster %d: %w", i, err)
+		}
+		if cluster.GetName() == "" {
+			return nil, fmt.Errorf("static cluster %d missing name", i)
+		}
+
+		clusterMap[cluster.GetName()] = cluster
+	}
+
+	return clusterMap, nil
 }
