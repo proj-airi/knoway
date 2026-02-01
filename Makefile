@@ -1,12 +1,5 @@
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
-export GOPROXY ?= http://10.6.100.13:8081/repository/go-proxy/
-export GOSUMDB ?= sum.golang.org http://10.6.100.13:8081/repository/gosum/
-
-HUB ?= release-ci.daocloud.io
-HUB_CI = release-ci.daocloud.io
-
-HELM_REPO ?= https://release-ci.daocloud.io/chartrepo/knoway
 
 PROD_NAME = knoway
 
