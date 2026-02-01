@@ -23,8 +23,9 @@ go.work
 
 # editor and IDE paraphernalia
 .idea
-.vscode
 *.swp
 *.swo
 *~
 config/local.yaml
+
+!.tool-versions
