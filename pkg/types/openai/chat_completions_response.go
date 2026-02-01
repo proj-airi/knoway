@@ -38,7 +38,7 @@ func NewChatCompletionResponse(request object.LLMRequest, response *http.Respons
 
 	err = resp.processBytes(buffer.Bytes(), response)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal response: %w, body: %s", err, buffer.String())
 	}
 
 	resp.request = request

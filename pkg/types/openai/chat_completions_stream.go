@@ -145,7 +145,7 @@ func (r *ChatCompletionStreamChunk) processBytes(bs []byte) error {
 
 	err := json.Unmarshal(bs, &body)
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal response body: %w", err)
+		return fmt.Errorf("failed to unmarshal response body: %w, body: %s", err, string(bs))
 	}
 
 	r.bodyParsed = body
