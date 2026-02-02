@@ -7,7 +7,9 @@ require (
 	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/golang/protobuf v1.5.4
+	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
+	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/nekomeowww/fo v1.6.1
 	github.com/nekomeowww/xo v1.12.0
@@ -17,6 +19,7 @@ require (
 	github.com/sashabaranov/go-openai v1.41.2
 	github.com/stoewer/go-strcase v1.3.1
 	github.com/stretchr/testify v1.11.1
+	github.com/vincent-petithory/dataurl v1.0.0
 	go.opentelemetry.io/otel v1.39.0
 	golang.org/x/image v0.35.0
 	google.golang.org/grpc v1.78.0
@@ -61,7 +64,6 @@ require (
 	github.com/google/cel-go v0.27.0 // indirect
 	github.com/google/gnostic-models v0.7.1 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
