@@ -12,7 +12,7 @@
             "program": "${workspaceFolder}/cmd/main.go",
             "args": [
                 "-config",
-                "${workspaceFolder}/config/config.yaml",
+                "${workspaceFolder}/config/local.yaml",
             ]
         },
         {
@@ -23,7 +23,7 @@
             "program": "${workspaceFolder}/cmd/main.go",
             "args": [
                 "-config",
-                "${workspaceFolder}/config/config.yaml",
+                "${workspaceFolder}/config/local.yaml",
                 "--static-cluster-only",
             ]
         }
