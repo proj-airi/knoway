@@ -179,6 +179,8 @@ func (m *clusterDefault) DoUpstreamRequest(ctx context.Context, llmReq object.LL
 		if !lo.IsNil(llmResp.GetUsage()) {
 			rMeta.LLMUpstreamImagesUsage = mo.Some(lo.Must(object.AsLLMImagesUsage(llmResp.GetUsage())))
 		}
+	case object.RequestTypeTextToSpeech:
+		// no usage tracking for text-to-speech yet
 	}
 
 	return llmResp, nil

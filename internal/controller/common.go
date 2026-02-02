@@ -31,11 +31,11 @@ func shouldForceDeleteBackend(backend Backend) bool {
 }
 
 func isModelRouteDeleted(modelRoute *knowaydevv1alpha1.ModelRoute) bool {
-	return modelRoute.ObjectMeta.GetDeletionTimestamp() != nil
+	return modelRoute.GetDeletionTimestamp() != nil
 }
 
 func shouldForceDeleteModelRoute(modelRoute *knowaydevv1alpha1.ModelRoute) bool {
-	if modelRoute.ObjectMeta.GetDeletionTimestamp() == nil {
+	if modelRoute.GetDeletionTimestamp() == nil {
 		return false
 	}
 
@@ -48,6 +48,7 @@ func modelNameOrNamespacedName[B *knowaydevv1alpha1.LLMBackend | *knowaydevv1alp
 		if lo.IsNil(v) {
 			return ""
 		}
+
 		if v.Spec.ModelName != nil {
 			return *v.Spec.ModelName
 		}
@@ -63,6 +64,7 @@ func modelNameOrNamespacedName[B *knowaydevv1alpha1.LLMBackend | *knowaydevv1alp
 		if lo.IsNil(v) {
 			return ""
 		}
+
 		if v.Spec.ModelName != nil {
 			return *v.Spec.ModelName
 		}
@@ -138,6 +140,7 @@ func setStatusCondition(backend Backend, typ string, ready bool, message string)
 			break
 		}
 	}
+
 	if index == -1 {
 		backend.GetStatus().SetConditions(append(backend.GetStatus().GetConditions(), newCond))
 	} else {
@@ -171,6 +174,7 @@ func setModelRouteStatusCondition(modelRoute *knowaydevv1alpha1.ModelRoute, typ 
 			break
 		}
 	}
+
 	if index == -1 {
 		modelRoute.Status.Conditions = append(modelRoute.Status.Conditions, newCond)
 	} else {
@@ -185,6 +189,7 @@ func setModelRouteStatusCondition(modelRoute *knowaydevv1alpha1.ModelRoute, typ 
 
 func reconcileBackendPhase(backend Backend) {
 	backend.GetStatus().SetStatus(knowaydevv1alpha1.Healthy)
+
 	if isBackendDeleted(backend) {
 		backend.GetStatus().SetStatus(knowaydevv1alpha1.Healthy)
 		return
@@ -238,7 +243,8 @@ func processStruct(v interface{}, params map[string]*structpb.Value) error {
 
 		// Handle inline struct fields (embedded fields)
 		if structField.Anonymous {
-			if err := processStruct(field.Addr().Interface(), params); err != nil {
+			err := processStruct(field.Addr().Interface(), params)
+			if err != nil {
 				return err
 			}
 
@@ -287,7 +293,8 @@ func processStruct(v interface{}, params map[string]*structpb.Value) error {
 			}
 
 			nestedParams := make(map[string]*structpb.Value)
-			if err := processStruct(nestedStruct.Interface(), nestedParams); err != nil {
+			err := processStruct(nestedStruct.Interface(), nestedParams)
+			if err != nil {
 				return err
 			}
 
@@ -321,15 +328,19 @@ func resolveHeaderFrom(ctx context.Context, c client.Client, namespace string, f
 	switch fromSource.RefType {
 	case knowaydevv1alpha1.Secret:
 		secret := &corev1.Secret{}
-		if err := c.Get(ctx, client.ObjectKey{Namespace: namespace, Name: fromSource.RefName}, secret); err != nil {
+		err := c.Get(ctx, client.ObjectKey{Namespace: namespace, Name: fromSource.RefName}, secret)
+		if err != nil {
 			return nil, fmt.Errorf("failed to get Secret %s: %w", fromSource.RefName, err)
 		}
+
 		data = secret.StringData
 	case knowaydevv1alpha1.ConfigMap:
 		configMap := &corev1.ConfigMap{}
-		if err := c.Get(ctx, client.ObjectKey{Namespace: namespace, Name: fromSource.RefName}, configMap); err != nil {
+		err := c.Get(ctx, client.ObjectKey{Namespace: namespace, Name: fromSource.RefName}, configMap)
+		if err != nil {
 			return nil, fmt.Errorf("failed to get ConfigMap %s: %w", fromSource.RefName, err)
 		}
+
 		data = configMap.Data
 	default:
 		// noting

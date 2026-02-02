@@ -65,7 +65,8 @@ type ImageGenerationBackendReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.19.4/pkg/reconcile
 func (r *ImageGenerationBackendReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	currentBackend := &knowaydevv1alpha1.ImageGenerationBackend{}
-	if err := r.Get(ctx, req.NamespacedName, currentBackend); err != nil {
+	err := r.Get(ctx, req.NamespacedName, currentBackend)
+	if err != nil {
 		log.Log.Error(err, "reconcile ImageGenerationBackend", "name", req.String())
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
@@ -106,13 +107,17 @@ func (r *ImageGenerationBackendReconciler) Reconcile(ctx context.Context, req ct
 	}
 
 	newBackend := &knowaydevv1alpha1.ImageGenerationBackend{}
-	if err := r.Get(ctx, req.NamespacedName, newBackend); err != nil {
+
+	err = r.Get(ctx, req.NamespacedName, newBackend)
+	if err != nil {
 		log.Log.Error(err, "reconcile ImageGenerationBackend", "name", req.String())
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+
 	if !statusEqual(BackendFromImageGenerationBackend(currentBackend).GetStatus(), BackendFromImageGenerationBackend(newBackend).GetStatus()) {
 		newBackend.Status = currentBackend.Status
-		if err := r.Status().Update(ctx, newBackend); err != nil {
+		err := r.Status().Update(ctx, newBackend)
+		if err != nil {
 			log.Log.Error(err, "update ImageGenerationBackend status error", "name", currentBackend.GetName())
 			return ctrl.Result{}, client.IgnoreNotFound(err)
 		}
@@ -145,6 +150,7 @@ func (r *ImageGenerationBackendReconciler) reconcileRegister(ctx context.Context
 	routeCfg := routemanager.InitDirectModelRoute(modelName)
 
 	mulErrs := &multierror.Error{}
+
 	if clusterCfg != nil {
 		err = clustermanager.UpsertAndRegisterCluster(clusterCfg, r.LifeCycle)
 		if err != nil {
@@ -152,7 +158,8 @@ func (r *ImageGenerationBackendReconciler) reconcileRegister(ctx context.Context
 			mulErrs = multierror.Append(mulErrs, fmt.Errorf("failed to upsert ImageGenerationBackend %s: %w", backend.GetName(), err))
 		}
 
-		if err = routemanager.RegisterBaseRouteWithConfig(routeCfg, r.LifeCycle); err != nil {
+		err = routemanager.RegisterBaseRouteWithConfig(routeCfg, r.LifeCycle)
+		if err != nil {
 			log.Log.Error(err, "Failed to register route", "route", modelName)
 			mulErrs = multierror.Append(mulErrs, fmt.Errorf("failed to upsert ImageGenerationBackend %s route: %w", backend.GetName(), err))
 		}
@@ -219,7 +226,8 @@ func (r *ImageGenerationBackendReconciler) getDeleteReconciles() []reconcileHand
 func (r *ImageGenerationBackendReconciler) reconcileConfig(ctx context.Context, backend *knowaydevv1alpha1.ImageGenerationBackend) error {
 	if len(backend.Finalizers) == 0 {
 		backend.Finalizers = []string{KnowayFinalzer}
-		if err := r.Update(ctx, backend.DeepCopy()); err != nil {
+		err := r.Update(ctx, backend.DeepCopy())
+		if err != nil {
 			log.Log.Error(err, "update cluster finalizer error")
 			return err
 		}
@@ -242,7 +250,8 @@ func (r *ImageGenerationBackendReconciler) reconcileFinalDelete(ctx context.Cont
 	}
 
 	backend.Finalizers = nil
-	if err := r.Update(ctx, backend); err != nil {
+	err := r.Update(ctx, backend)
+	if err != nil {
 		log.Log.Error(err, "update ImageGenerationBackend finalizer error")
 		return err
 	}
@@ -256,6 +265,7 @@ func (r *ImageGenerationBackendReconciler) reconcileValidator(ctx context.Contex
 	if backend.Spec.ModelName != nil && *backend.Spec.ModelName == "" {
 		return errors.New("spec.modelName cannot be empty")
 	}
+
 	if backend.Spec.Upstream.BaseURL == "" {
 		return errors.New("upstream.baseUrl cannot be empty")
 	}
@@ -265,7 +275,7 @@ func (r *ImageGenerationBackendReconciler) reconcileValidator(ctx context.Contex
 	}
 
 	allExistingBackend := &knowaydevv1alpha1.ImageGenerationBackendList{}
-	if err := r.Client.List(ctx, allExistingBackend); err != nil {
+	if err := r.List(ctx, allExistingBackend); err != nil {
 		return fmt.Errorf("failed to list ImageGenerationBackend resources: %w", err)
 	}
 
@@ -303,13 +313,15 @@ func parseImageGenerationBackendModelParams(modelParams *knowaydevv1alpha1.Image
 	if modelParams == nil {
 		return nil
 	}
+
 	modelTypes := map[string]interface{}{
 		"OpenAI": modelParams.OpenAI,
 	}
 
 	for name, model := range modelTypes {
 		if !lo.IsNil(model) {
-			if err := processStruct(model, params); err != nil {
+			err := processStruct(model, params)
+			if err != nil {
 				return fmt.Errorf("error processing %s params: %w", name, err)
 			}
 		}
@@ -320,17 +332,20 @@ func parseImageGenerationBackendModelParams(modelParams *knowaydevv1alpha1.Image
 
 func toImageGenerationBackendParams(backed *knowaydevv1alpha1.ImageGenerationBackend) (map[string]*structpb.Value, map[string]*structpb.Value, error) {
 	var defaultParams, overrideParams map[string]*structpb.Value
+
 	if backed == nil {
 		return nil, nil, nil
 	}
 
 	defaultParams, overrideParams = make(map[string]*structpb.Value), make(map[string]*structpb.Value)
 
-	if err := parseImageGenerationBackendModelParams(backed.Spec.Upstream.DefaultParams, defaultParams); err != nil {
+	err := parseImageGenerationBackendModelParams(backed.Spec.Upstream.DefaultParams, defaultParams)
+	if err != nil {
 		return nil, nil, fmt.Errorf("error processing DefaultParams: %w", err)
 	}
 
-	if err := parseImageGenerationBackendModelParams(backed.Spec.Upstream.OverrideParams, overrideParams); err != nil {
+	err = parseImageGenerationBackendModelParams(backed.Spec.Upstream.OverrideParams, overrideParams)
+	if err != nil {
 		return nil, nil, fmt.Errorf("error processing OverrideParams: %w", err)
 	}
 

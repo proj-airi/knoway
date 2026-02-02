@@ -58,10 +58,12 @@ func TestLLMBackendReconciler_Reconcile(t *testing.T) {
 					},
 					Status: v1alpha1.LLMBackendStatus{},
 				}
+
 				err := cl.Create(context.Background(), resource)
 				if err != nil {
 					t.Fatalf("failed to create resource: %v", err)
 				}
+
 				return cl
 			},
 			request: reconcile.Request{
@@ -73,6 +75,7 @@ func TestLLMBackendReconciler_Reconcile(t *testing.T) {
 			expectError: false,
 			validate: func(t *testing.T, cl client.Client) {
 				t.Helper()
+
 				resource := &v1alpha1.LLMBackend{}
 				err := cl.Get(context.Background(), client.ObjectKey{
 					Namespace: "default",

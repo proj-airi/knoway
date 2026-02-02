@@ -41,6 +41,14 @@ const (
 	ProviderOpenAI Provider = "OpenAI"
 	ProviderVLLM   Provider = "vLLM"
 	ProviderOllama Provider = "Ollama"
+
+	ProviderOpenAIV1Speech           Provider = "OpenAIV1Speech"
+	ProviderDeepgramWebSocketV1      Provider = "DeepgramWebSocketV1"
+	ProviderElevenLabsV1             Provider = "ElevenLabsV1"
+	ProviderKoemotionV1              Provider = "KoemotionV1"
+	ProviderVolcengineSeedSpeechV1   Provider = "VolcengineSeedSpeechServiceV1"
+	ProviderAlibabaCosyVoiceService  Provider = "AlibabaCosyVoiceService"
+	ProviderMicrosoftSpeechServiceV1 Provider = "MicrosoftSpeechServiceV1"
 )
 
 type BackendType string

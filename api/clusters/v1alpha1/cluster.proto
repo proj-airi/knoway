@@ -43,6 +43,7 @@ enum ClusterType {
     CLUSTER_TYPE_UNSPECIFIED = 0;
     LLM                      = 1;
     IMAGE_GENERATION         = 2;
+    SPEECH_GENERATION        = 3;
 }
 
 enum ClusterProvider {
@@ -50,6 +51,13 @@ enum ClusterProvider {
     OPEN_AI                      = 1;
     VLLM                         = 2;
     OLLAMA                       = 3;
+    OPEN_AI_V1_SPEECH            = 4;
+    DEEPGRAM_WEBSOCKET_V1        = 5;
+    ELEVEN_LABS_V1               = 6;
+    KOEMOTION_V1                 = 7;
+    VOLCENGINE_SEED_SPEECH_V1    = 8;
+    ALIBABA_COSY_VOICE_SERVICE   = 9;
+    MICROSOFT_SPEECH_SERVICE_V1  = 10;
 }
 
 message ClusterMeteringPolicy {

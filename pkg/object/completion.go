@@ -16,6 +16,7 @@ const (
 	RequestTypeChatCompletions  RequestType = "chat_completions"
 	RequestTypeCompletions      RequestType = "completions"
 	RequestTypeImageGenerations RequestType = "image_generations"
+	RequestTypeTextToSpeech     RequestType = "text_to_speech"
 )
 
 type LLMRequest interface {

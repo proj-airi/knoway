@@ -18,11 +18,28 @@ func ResponseHandler() func(resp any, err error, writer http.ResponseWriter, req
 		rMeta := metadata.RequestMetadataFromCtx(request.Context())
 
 		if err == nil {
-			if resp != nil {
-				rMeta.StatusCode = http.StatusOK
-
-				utils.WriteJSONForHTTP(http.StatusOK, resp, writer)
+			if resp == nil {
+				return
 			}
+
+			if binaryResp, ok := resp.(interface {
+				WriteTo(writer http.ResponseWriter) error
+			}); ok {
+				if statuser, ok := resp.(interface{ GetStatus() int }); ok {
+					rMeta.StatusCode = statuser.GetStatus()
+				} else {
+					rMeta.StatusCode = http.StatusOK
+				}
+
+				if err := binaryResp.WriteTo(writer); err != nil {
+					slog.Error("failed to write binary response", "error", err)
+				}
+
+				return
+			}
+
+			rMeta.StatusCode = http.StatusOK
+			utils.WriteJSONForHTTP(http.StatusOK, resp, writer)
 
 			return
 		}

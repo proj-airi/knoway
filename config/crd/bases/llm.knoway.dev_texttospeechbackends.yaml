@@ -1,0 +1,265 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.16.5
+  name: texttospeechbackends.llm.knoway.dev
+spec:
+  group: llm.knoway.dev
+  names:
+    kind: TextToSpeechBackend
+    listKind: TextToSpeechBackendList
+    plural: texttospeechbackends
+    singular: texttospeechbackend
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.provider
+      name: Provider
+      type: string
+    - jsonPath: .spec.modelName
+      name: Model Name
+      type: string
+    - jsonPath: .spec.upstream.baseUrl
+      name: URL
+      type: string
+    - jsonPath: .status.status
+      name: Status
+      type: string
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: TextToSpeechBackend is the Schema for the texttospeechbackends
+          API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: TextToSpeechBackendSpec defines the desired state of TextToSpeechBackend.
+            properties:
+              filters:
+                description: Filters are applied to the model's requests
+                items:
+                  description: TextToSpeechFilter represents the text-to-speech backend
+                    filter configuration.
+                  properties:
+                    custom:
+                      description: "Custom: Custom plugin configuration\nExample:\n\n\tcustom:\n\t\tpluginName:
+                        examplePlugin\n\t\tpluginVersion: \"1.0.0\"\n\t\tsettings:\n
+                        \ \t\tsetting1: value1\n  \t\tsetting2: value2"
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
+                    name:
+                      type: string
+                  type: object
+                type: array
+              modelName:
+                description: ModelName specifies the name of the model
+                type: string
+              provider:
+                description: Provider indicates the organization providing the model
+                enum:
+                - OpenAI
+                - vLLM
+                - Ollama
+                - OpenAIV1Speech
+                - DeepgramWebSocketV1
+                - ElevenLabsV1
+                - KoemotionV1
+                - VolcengineSeedSpeechServiceV1
+                - AlibabaCosyVoiceService
+                - MicrosoftSpeechServiceV1
+                type: string
+              upstream:
+                description: Upstream contains information about the upstream configuration
+                properties:
+                  RemoveParamKeys:
+                    items:
+                      type: string
+                    type: array
+                  baseUrl:
+                    description: "BaseUrl define upstream endpoint url\nExample:\n\t\thttps://api.openai.com/v1/audio/speech\n\n
+                      \thttp://tts.default.svc.cluster.local:8080/v1/audio/speech"
+                    type: string
+                  defaultParams:
+                    properties:
+                      openai:
+                        description: OpenAI model parameters
+                        properties:
+                          input:
+                            description: The text to generate audio for.
+                            type: string
+                          model:
+                            type: string
+                          response_format:
+                            description: The format to audio in. Supported formats
+                              are mp3, opus, aac, flac, wav, and pcm.
+                            type: string
+                          speed:
+                            description: The speed of the generated audio. Select
+                              a value from 0.25 to 4.0.
+                            type: string
+                          voice:
+                            description: The voice to use when generating the audio.
+                            type: string
+                        type: object
+                    type: object
+                  headers:
+                    description: "Headers defines the common headers for the model,
+                      such as the authentication header for the API key.\nExample:\n\nheaders：\n\t-
+                      key: apikey\n\t  value: \"sk-or-v1-xxxxxxxxxx\""
+                    items:
+                      properties:
+                        key:
+                          type: string
+                        value:
+                          type: string
+                      type: object
+                    type: array
+                  headersFrom:
+                    description: "Headers defines the common headers for the model,
+                      such as the authentication header for the API key.\nExample:\n\nheadersFrom：\n\t-
+                      prefix: sk-or-v1-\n\t  refType: Secret\n\t  refName: common-gpt4-apikey"
+                    items:
+                      description: HeaderFromSource represents the source of a set
+                        of ConfigMaps or Secrets
+                      properties:
+                        prefix:
+                          description: An optional identifier to prepend to each key
+                            in the ref.
+                          type: string
+                        refName:
+                          description: Name of the source
+                          type: string
+                        refType:
+                          description: Type of the source (ConfigMap or Secret)
+                          enum:
+                          - ConfigMap
+                          - Secret
+                          type: string
+                      type: object
+                    type: array
+                  overrideParams:
+                    properties:
+                      openai:
+                        description: OpenAI model parameters
+                        properties:
+                          input:
+                            description: The text to generate audio for.
+                            type: string
+                          model:
+                            type: string
+                          response_format:
+                            description: The format to audio in. Supported formats
+                              are mp3, opus, aac, flac, wav, and pcm.
+                            type: string
+                          speed:
+                            description: The speed of the generated audio. Select
+                              a value from 0.25 to 4.0.
+                            type: string
+                          voice:
+                            description: The voice to use when generating the audio.
+                            type: string
+                        type: object
+                    type: object
+                  timeout:
+                    format: int32
+                    type: integer
+                type: object
+            type: object
+          status:
+            description: TextToSpeechBackendStatus defines the observed state of TextToSpeechBackend.
+            properties:
+              conditions:
+                description: Conditions represent the current conditions of the backend
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              endpoints:
+                description: Endpoints holds the upstream addresses of the current
+                  model (pod IP addresses)
+                items:
+                  type: string
+                type: array
+              status:
+                description: 'Status indicates the health of the backend: Unknown,
+                  Healthy, or Failed'
+                enum:
+                - Unknown
+                - Healthy
+                - Failed
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

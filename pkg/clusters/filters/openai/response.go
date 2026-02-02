@@ -19,6 +19,7 @@ import (
 	"knoway.dev/pkg/object"
 	"knoway.dev/pkg/protoutils"
 	"knoway.dev/pkg/types/openai"
+	"knoway.dev/pkg/types/tts"
 )
 
 func NewResponseHandlerWithConfig(cfg *anypb.Any, _ bootkit.LifeCycle) (clusterfilters.ClusterFilter, error) {
@@ -36,8 +37,9 @@ var _ clusterfilters.ClusterFilterResponseUnmarshaller = (*responseHandler)(nil)
 var _ clusterfilters.ClusterFilterResponseModifier = (*responseHandler)(nil)
 
 type responseHandler struct {
-	cfg *v1alpha1.OpenAIResponseHandlerConfig
 	clusterfilters.ClusterFilter
+
+	cfg *v1alpha1.OpenAIResponseHandlerConfig
 }
 
 func (f *responseHandler) UnmarshalResponseBody(ctx context.Context, cluster *v1alpha12.Cluster, req object.LLMRequest, rawResponse *http.Response, reader *bufio.Reader, pre object.LLMResponse) (object.LLMResponse, error) {
@@ -65,6 +67,27 @@ func (f *responseHandler) UnmarshalResponseBody(ctx context.Context, cluster *v1
 		default:
 			break
 		}
+	case object.RequestTypeTextToSpeech:
+		if rawResponse.StatusCode >= http.StatusBadRequest {
+			tryReadBody := new(bytes.Buffer)
+
+			_, err := tryReadBody.ReadFrom(rawResponse.Body)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read body: %w", err)
+			}
+
+			rawResponse.Body.Close()
+			rawResponse.Body = io.NopCloser(bytes.NewBuffer(tryReadBody.Bytes()))
+
+			errResp, err := openai.ParseErrorResponse(rawResponse, tryReadBody.Bytes())
+			if err != nil || errResp == nil {
+				return nil, fmt.Errorf("upstream returned status code %d with body %s", rawResponse.StatusCode, tryReadBody.String())
+			}
+
+			return nil, errResp
+		}
+
+		return tts.NewAudioResponseFromHTTP(rawResponse, req.GetModel()), nil
 	default:
 		return nil, fmt.Errorf("unsupported request type %s", req.GetRequestType())
 	}

@@ -29,7 +29,7 @@ func (b *LLMBackend) GetType() knowaydevv1alpha1.BackendType {
 }
 
 func (b *LLMBackend) GetObjectObjectMeta() metav1.ObjectMeta {
-	return b.LLMBackend.ObjectMeta
+	return b.ObjectMeta
 }
 
 func (b *LLMBackend) GetStatus() Statusable[knowaydevv1alpha1.StatusEnum] {
@@ -77,7 +77,7 @@ func (b *ImageGenerationBackend) GetType() knowaydevv1alpha1.BackendType {
 }
 
 func (b *ImageGenerationBackend) GetObjectObjectMeta() metav1.ObjectMeta {
-	return b.ImageGenerationBackend.ObjectMeta
+	return b.ObjectMeta
 }
 
 func (b *ImageGenerationBackend) GetStatus() Statusable[knowaydevv1alpha1.StatusEnum] {
@@ -121,6 +121,7 @@ func getBackendFromNamespacedName(ctx context.Context, kubeClient client.Client,
 	if err != nil && !apierrors.IsNotFound(err) {
 		return nil, err
 	}
+
 	if err == nil {
 		return BackendFromLLMBackend(&llmBackend), nil
 	}
@@ -131,6 +132,7 @@ func getBackendFromNamespacedName(ctx context.Context, kubeClient client.Client,
 	if err != nil && !apierrors.IsNotFound(err) {
 		return nil, err
 	}
+
 	if err == nil {
 		return BackendFromImageGenerationBackend(&imageGenerationBackend), nil
 	}

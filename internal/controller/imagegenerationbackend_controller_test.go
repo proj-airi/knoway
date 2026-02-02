@@ -55,10 +55,12 @@ func TestImageGenerationBackendReconciler_Reconcile(t *testing.T) {
 					},
 					Status: v1alpha1.ImageGenerationBackendStatus{},
 				}
+
 				err := cl.Create(context.Background(), resource)
 				if err != nil {
 					t.Fatalf("failed to create resource: %v", err)
 				}
+
 				return cl
 			},
 			request: reconcile.Request{
@@ -70,6 +72,7 @@ func TestImageGenerationBackendReconciler_Reconcile(t *testing.T) {
 			expectError: false,
 			validate: func(t *testing.T, cl client.Client) {
 				t.Helper()
+
 				resource := &v1alpha1.ImageGenerationBackend{}
 				err := cl.Get(context.Background(), client.ObjectKey{
 					Namespace: "default",

@@ -65,7 +65,8 @@ type LLMBackendReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.18.2/pkg/reconcile
 func (r *LLMBackendReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	currentBackend := &knowaydevv1alpha1.LLMBackend{}
-	if err := r.Get(ctx, req.NamespacedName, currentBackend); err != nil {
+	err := r.Get(ctx, req.NamespacedName, currentBackend)
+	if err != nil {
 		log.Log.Error(err, "reconcile LLMBackend", "name", req.String())
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
@@ -105,13 +106,17 @@ func (r *LLMBackendReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	newBackend := &knowaydevv1alpha1.LLMBackend{}
-	if err := r.Get(ctx, req.NamespacedName, newBackend); err != nil {
+
+	err = r.Get(ctx, req.NamespacedName, newBackend)
+	if err != nil {
 		log.Log.Error(err, "reconcile LLMBackend", "name", req.String())
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+
 	if !statusEqual(BackendFromLLMBackend(currentBackend).GetStatus(), BackendFromLLMBackend(newBackend).GetStatus()) {
 		newBackend.Status = currentBackend.Status
-		if err := r.Status().Update(ctx, newBackend); err != nil {
+		err := r.Status().Update(ctx, newBackend)
+		if err != nil {
 			log.Log.Error(err, "update LLMBackend status error", "name", currentBackend.GetName())
 			return ctrl.Result{}, client.IgnoreNotFound(err)
 		}
@@ -144,6 +149,7 @@ func (r *LLMBackendReconciler) reconcileRegister(ctx context.Context, llmBackend
 	routeCfg := routemanager.InitDirectModelRoute(modelName)
 
 	mulErrs := &multierror.Error{}
+
 	if clusterCfg != nil {
 		err = clustermanager.UpsertAndRegisterCluster(clusterCfg, r.LifeCycle)
 		if err != nil {
@@ -151,7 +157,8 @@ func (r *LLMBackendReconciler) reconcileRegister(ctx context.Context, llmBackend
 			mulErrs = multierror.Append(mulErrs, fmt.Errorf("failed to upsert LLMBackend %s: %w", llmBackend.GetName(), err))
 		}
 
-		if err = routemanager.RegisterBaseRouteWithConfig(routeCfg, r.LifeCycle); err != nil {
+		err = routemanager.RegisterBaseRouteWithConfig(routeCfg, r.LifeCycle)
+		if err != nil {
 			log.Log.Error(err, "Failed to register route", "route", modelName)
 			mulErrs = multierror.Append(mulErrs, fmt.Errorf("failed to upsert LLMBackend %s route: %w", llmBackend.GetName(), err))
 		}
@@ -168,6 +175,7 @@ func (r *LLMBackendReconciler) reconcileValidator(ctx context.Context, llmBacken
 	if llmBackend.Spec.ModelName != nil && *llmBackend.Spec.ModelName == "" {
 		return errors.New("spec.modelName cannot be empty")
 	}
+
 	if llmBackend.Spec.Upstream.BaseURL == "" {
 		return errors.New("upstream.baseUrl cannot be empty")
 	}
@@ -177,7 +185,7 @@ func (r *LLMBackendReconciler) reconcileValidator(ctx context.Context, llmBacken
 	}
 
 	allExistingBackend := &knowaydevv1alpha1.LLMBackendList{}
-	if err := r.Client.List(ctx, allExistingBackend); err != nil {
+	if err := r.List(ctx, allExistingBackend); err != nil {
 		return fmt.Errorf("failed to list LLMBackend resources: %w", err)
 	}
 
@@ -277,7 +285,8 @@ func (r *LLMBackendReconciler) getDeleteReconciles() []reconcileHandler[*knowayd
 func (r *LLMBackendReconciler) reconcileConfig(ctx context.Context, llmBackend *knowaydevv1alpha1.LLMBackend) error {
 	if len(llmBackend.Finalizers) == 0 {
 		llmBackend.Finalizers = []string{KnowayFinalzer}
-		if err := r.Update(ctx, llmBackend.DeepCopy()); err != nil {
+		err := r.Update(ctx, llmBackend.DeepCopy())
+		if err != nil {
 			log.Log.Error(err, "update cluster finalizer error")
 			return err
 		}
@@ -302,7 +311,8 @@ func (r *LLMBackendReconciler) reconcileFinalDelete(ctx context.Context, llmBack
 	}
 
 	llmBackend.Finalizers = nil
-	if err := r.Update(ctx, llmBackend); err != nil {
+	err := r.Update(ctx, llmBackend)
+	if err != nil {
 		log.Log.Error(err, "update LLMBackend finalizer error")
 		return err
 	}
@@ -324,13 +334,15 @@ func parseModelParams(modelParams *knowaydevv1alpha1.ModelParams, params map[str
 	if modelParams == nil {
 		return nil
 	}
+
 	modelTypes := map[string]interface{}{
 		"OpenAI": modelParams.OpenAI,
 	}
 
 	for name, model := range modelTypes {
 		if !lo.IsNil(model) {
-			if err := processStruct(model, params); err != nil {
+			err := processStruct(model, params)
+			if err != nil {
 				return fmt.Errorf("error processing %s params: %w", name, err)
 			}
 		}
@@ -341,17 +353,20 @@ func parseModelParams(modelParams *knowaydevv1alpha1.ModelParams, params map[str
 
 func toLLMBackendParams(backed *knowaydevv1alpha1.LLMBackend) (map[string]*structpb.Value, map[string]*structpb.Value, error) {
 	var defaultParams, overrideParams map[string]*structpb.Value
+
 	if backed == nil {
 		return nil, nil, nil
 	}
 
 	defaultParams, overrideParams = make(map[string]*structpb.Value), make(map[string]*structpb.Value)
 
-	if err := parseModelParams(backed.Spec.Upstream.DefaultParams, defaultParams); err != nil {
+	err := parseModelParams(backed.Spec.Upstream.DefaultParams, defaultParams)
+	if err != nil {
 		return nil, nil, fmt.Errorf("error processing DefaultParams: %w", err)
 	}
 
-	if err := parseModelParams(backed.Spec.Upstream.OverrideParams, overrideParams); err != nil {
+	err = parseModelParams(backed.Spec.Upstream.OverrideParams, overrideParams)
+	if err != nil {
 		return nil, nil, fmt.Errorf("error processing OverrideParams: %w", err)
 	}
 

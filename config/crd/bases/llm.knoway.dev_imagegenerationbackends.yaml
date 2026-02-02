@@ -91,6 +91,13 @@ spec:
                 - OpenAI
                 - vLLM
                 - Ollama
+                - OpenAIV1Speech
+                - DeepgramWebSocketV1
+                - ElevenLabsV1
+                - KoemotionV1
+                - VolcengineSeedSpeechServiceV1
+                - AlibabaCosyVoiceService
+                - MicrosoftSpeechServiceV1
                 type: string
               upstream:
                 description: Upstream contains information about the upstream configuration

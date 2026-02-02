@@ -69,7 +69,8 @@ type ModelRouteReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.19.4/pkg/reconcile
 func (r *ModelRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	modelRoute := &llmv1alpha1.ModelRoute{}
-	if err := r.Get(ctx, req.NamespacedName, modelRoute); err != nil {
+	err := r.Get(ctx, req.NamespacedName, modelRoute)
+	if err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
@@ -109,13 +110,17 @@ func (r *ModelRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	newModelRoute := &llmv1alpha1.ModelRoute{}
-	if err := r.Get(ctx, req.NamespacedName, newModelRoute); err != nil {
+
+	err = r.Get(ctx, req.NamespacedName, newModelRoute)
+	if err != nil {
 		log.Log.Error(err, "reconcile ModelRoute", "name", req.String())
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+
 	if !routeStatusEqual(&ModelRouteStatus{ModelRouteStatus: &modelRoute.Status}, &ModelRouteStatus{ModelRouteStatus: &newModelRoute.Status}) {
 		newModelRoute.Status = modelRoute.Status
-		if err := r.Status().Update(ctx, newModelRoute); err != nil {
+		err := r.Status().Update(ctx, newModelRoute)
+		if err != nil {
 			log.Log.Error(err, "update ModelRoute status error", "name", modelRoute.GetName())
 			return ctrl.Result{}, client.IgnoreNotFound(err)
 		}
@@ -137,6 +142,7 @@ func (r *ModelRouteReconciler) mapCRDTargetsToBackends(ctx context.Context, targ
 		if err != nil {
 			return make(map[string]Backend), err
 		}
+
 		if backend == nil {
 			backends[nsName.String()] = nil
 			continue
@@ -174,8 +180,10 @@ func (r *ModelRouteReconciler) reconcileRegister(ctx context.Context, modelRoute
 	}
 
 	mulErrs := &multierror.Error{}
+
 	if routeConfig != nil {
-		if err := routemanager.RegisterMatchRouteWithConfig(routeConfig, r.LifeCycle); err != nil {
+		err := routemanager.RegisterMatchRouteWithConfig(routeConfig, r.LifeCycle)
+		if err != nil {
 			log.Log.Error(err, "Failed to register route", "route", modelName)
 			mulErrs = multierror.Append(mulErrs, fmt.Errorf("failed to upsert ModelRoute %s route: %w", modelRoute.GetName(), err))
 		}
@@ -283,7 +291,8 @@ func (r *ModelRouteReconciler) getDeleteReconciles() []reconcileHandler[*llmv1al
 func (r *ModelRouteReconciler) reconcileConfig(ctx context.Context, backend *llmv1alpha1.ModelRoute) error {
 	if len(backend.Finalizers) == 0 {
 		backend.Finalizers = []string{KnowayFinalzer}
-		if err := r.Update(ctx, backend.DeepCopy()); err != nil {
+		err := r.Update(ctx, backend.DeepCopy())
+		if err != nil {
 			log.Log.Error(err, "update cluster finalizer error")
 			return err
 		}
@@ -306,7 +315,8 @@ func (r *ModelRouteReconciler) reconcileFinalDelete(ctx context.Context, modelRo
 	}
 
 	modelRoute.Finalizers = nil
-	if err := r.Update(ctx, modelRoute); err != nil {
+	err := r.Update(ctx, modelRoute)
+	if err != nil {
 		log.Log.Error(err, "update ModelRoute finalizer error")
 		return err
 	}
@@ -320,11 +330,13 @@ func (r *ModelRouteReconciler) reconcileValidator(ctx context.Context, modelRout
 	if modelRoute.Spec.ModelName == "" {
 		return errors.New("spec.modelName cannot be empty")
 	}
+
 	if modelRoute.Spec.Route != nil && len(modelRoute.Spec.Route.Targets) != 0 {
 		for index, target := range modelRoute.Spec.Route.Targets {
 			if target.Destination.Backend == "" {
 				return fmt.Errorf("spec.route.targets[%d].destination.backend cannot be empty", index)
 			}
+
 			if target.Destination.Weight != nil && *target.Destination.Weight < 0 {
 				return fmt.Errorf("spec.route.targets[%d].destination.weight cannot be less than 0", index)
 			}
@@ -338,20 +350,23 @@ func (r *ModelRouteReconciler) reconcileValidator(ctx context.Context, modelRout
 			return errors.New("spec.route.targets.[].destination.weight must be either all set or all unset")
 		}
 	}
+
 	if modelRoute.Spec.Fallback != nil {
 		if modelRoute.Spec.Fallback.PostDelay != nil && *modelRoute.Spec.Fallback.PostDelay < 0 {
 			return errors.New("spec.fallback.postDelay must be greater than or equal to 0")
 		}
+
 		if modelRoute.Spec.Fallback.PreDelay != nil && *modelRoute.Spec.Fallback.PreDelay < 0 {
 			return errors.New("spec.fallback.preDelay must be greater than or equal to 0")
 		}
+
 		if modelRoute.Spec.Fallback.MaxRetires != nil && *modelRoute.Spec.Fallback.MaxRetires <= 0 {
 			return errors.New("spec.fallback.maxRetries must be greater than 0")
 		}
 	}
 
 	allExistingBackend := &llmv1alpha1.ModelRouteList{}
-	if err := r.Client.List(ctx, allExistingBackend); err != nil {
+	if err := r.List(ctx, allExistingBackend); err != nil {
 		return fmt.Errorf("failed to list ModelRoute resources: %w", err)
 	}
 
@@ -389,6 +404,7 @@ func (r *ModelRouteReconciler) getModelRouteTargets(modelRoute *llmv1alpha1.Mode
 
 		for _, target := range modelRoute.Spec.Route.Targets {
 			var weight *int32
+
 			if target.Destination.Weight != nil {
 				areAllWeightsUnset = false
 				weight = lo.ToPtr(int32(lo.FromPtr(target.Destination.Weight)))
@@ -398,6 +414,7 @@ func (r *ModelRouteReconciler) getModelRouteTargets(modelRoute *llmv1alpha1.Mode
 			if tns == "" {
 				tns = modelRoute.GetNamespace()
 			}
+
 			targets = append(targets, &routev1alpha1.RouteTarget{
 				Destination: &routev1alpha1.RouteDestination{
 					Namespace: tns,
@@ -438,7 +455,7 @@ func (r *ModelRouteReconciler) mapModelRouteTargetsToBackends(targets []*routev1
 				Namespace: target.GetDestination().GetNamespace(),
 				Backend:   target.GetDestination().GetBackend(),
 				Cluster:   backend.GetModelName(),
-				Weight:    target.GetDestination().Weight, //nolint:protogetter
+				Weight:    target.GetDestination().Weight,
 			},
 		})
 	}
@@ -455,6 +472,7 @@ func (r *ModelRouteReconciler) buildRateLimitPolicies(rateLimits []*llmv1alpha1.
 
 	for _, rateLimit := range rateLimits {
 		var pMatch *filtersv1alpha1.StringMatch
+
 		if rateLimit.Match != nil {
 			if rateLimit.Match.Exact != "" {
 				pMatch = &filtersv1alpha1.StringMatch{
@@ -498,6 +516,7 @@ func (r *ModelRouteReconciler) toRegisterRouteConfig(_ context.Context, modelRou
 			if filter.RateLimit == nil {
 				return nil, errors.New("rate limit filter cannot be nil")
 			}
+
 			name, _ := lo.Coalesce(filter.Name, "route-rate-limits")
 			filters = append(filters, &routev1alpha1.RouteFilter{
 				Name: name,
@@ -517,9 +536,11 @@ func (r *ModelRouteReconciler) toRegisterRouteConfig(_ context.Context, modelRou
 		if modelRoute.Spec.Fallback.PreDelay != nil {
 			fallback.PreDelay = durationpb.New(time.Duration(*modelRoute.Spec.Fallback.PreDelay) * time.Second)
 		}
+
 		if modelRoute.Spec.Fallback.PostDelay != nil {
 			fallback.PostDelay = durationpb.New(time.Duration(*modelRoute.Spec.Fallback.PostDelay) * time.Second)
 		}
+
 		if modelRoute.Spec.Fallback.MaxRetires != nil {
 			fallback.MaxRetries = modelRoute.Spec.Fallback.MaxRetires
 		}

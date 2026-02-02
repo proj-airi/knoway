@@ -165,6 +165,8 @@ func (f *UsageFilter) usageReport(ctx context.Context, request object.LLMRequest
 			slog.Uint64("width", usageImage.GetWidth()),
 			slog.Uint64("height", usageImage.GetHeight()),
 		)
+	case object.RequestTypeTextToSpeech:
+		// no usage tracking for text-to-speech yet
 	}
 }
 

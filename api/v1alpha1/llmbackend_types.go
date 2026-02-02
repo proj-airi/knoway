@@ -58,7 +58,7 @@ type LLMBackendSpec struct {
 	// +optional
 	ModelName *string `json:"modelName,omitempty"`
 	// Provider indicates the organization providing the model
-	// +kubebuilder:validation:Enum=OpenAI;vLLM;Ollama
+	// +kubebuilder:validation:Enum=OpenAI;vLLM;Ollama;OpenAIV1Speech;DeepgramWebSocketV1;ElevenLabsV1;KoemotionV1;VolcengineSeedSpeechServiceV1;AlibabaCosyVoiceService;MicrosoftSpeechServiceV1
 	Provider Provider `json:"provider,omitempty"`
 	// Upstream contains information about the upstream configuration
 	Upstream BackendUpstream `json:"upstream,omitempty"`

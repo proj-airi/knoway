@@ -20,6 +20,7 @@ func modifyBufferBodyAndParsed(buffer *bytes.Buffer, applyOpt *jsonpatch.ApplyOp
 	if err != nil {
 		return nil, nil, err
 	}
+
 	if applyOpt == nil {
 		applyOpt = jsonpatch.NewApplyOptions()
 	}
@@ -142,10 +143,25 @@ func unmarshalErrorResponseFromParsedBody(body map[string]any, response *http.Re
 	return nil, nil
 }
 
+func ParseErrorResponse(response *http.Response, bs []byte) (*ErrorResponse, error) {
+	if response == nil {
+		return nil, errors.New("response is nil")
+	}
+
+	var body map[string]any
+	err := json.Unmarshal(bs, &body)
+	if err != nil {
+		return nil, err
+	}
+
+	return unmarshalErrorResponseFromParsedBody(body, response, bs)
+}
+
 func parseImageGenerationsSizeString(str *string) (*ImageGenerationsRequestSize, error) {
 	if str == nil {
 		return nil, nil
 	}
+
 	if *str == "" {
 		return nil, NewErrorBadRequest().WithMessage("empty size string")
 	}
@@ -154,6 +170,7 @@ func parseImageGenerationsSizeString(str *string) (*ImageGenerationsRequestSize,
 	if len(sizeStrings) < 2 { //nolint:mnd
 		return nil, NewErrorBadRequest().WithMessage("invalid `" + *str + "` in \"size\" value")
 	}
+
 	if len(sizeStrings) > 2 { //nolint:mnd
 		return nil, NewErrorBadRequest().WithMessage("invalid `" + *str + "` in \"size\" value: too many parts")
 	}

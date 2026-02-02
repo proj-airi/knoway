@@ -18,15 +18,18 @@ import (
 	"knoway.dev/pkg/listener"
 	"knoway.dev/pkg/listener/manager/chat"
 	"knoway.dev/pkg/listener/manager/image"
+	"knoway.dev/pkg/listener/manager/tts"
 )
 
 func StartGateway(_ context.Context, lifecycle bootkit.LifeCycle, listenerAddr string, cfg []*anypb.Any) error {
 	if listenerAddr == "" {
 		listenerAddr = ":8080"
 	}
+
 	if len(cfg) == 0 {
 		return errors.New("no listener found")
 	}
+
 	mux := listener.NewMux()
 
 	for _, c := range cfg {
@@ -40,6 +43,8 @@ func StartGateway(_ context.Context, lifecycle bootkit.LifeCycle, listenerAddr s
 			mux.Register(chat.NewOpenAIChatListenerConfigs(obj, lifecycle))
 		case *v1alpha1.ImageListener:
 			mux.Register(image.NewOpenAIImageListenerConfigs(obj, lifecycle))
+		case *v1alpha1.TextToSpeechListener:
+			mux.Register(tts.NewOpenAITextToSpeechListenerConfigs(obj, lifecycle))
 		default:
 			return fmt.Errorf("%s is not a valid listener", c.GetTypeUrl())
 		}
@@ -59,19 +64,23 @@ func StartGateway(_ context.Context, lifecycle bootkit.LifeCycle, listenerAddr s
 		OnStart: func(ctx context.Context) error {
 			slog.Info("Starting gateway ...", "addr", ln.Addr().String())
 
-			if err := server.Serve(ln); err != nil && err != http.ErrServerClosed {
+			err := server.Serve(ln)
+			if err != nil && err != http.ErrServerClosed {
 				return err
 			}
+
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
 			slog.Info("Stopping gateway ...")
 
-			if err := server.Shutdown(ctx); err != nil {
+			err := server.Shutdown(ctx)
+			if err != nil {
 				return err
 			}
 
 			slog.Info("Gateway stopped gracefully.")
+
 			return nil
 		},
 	})
