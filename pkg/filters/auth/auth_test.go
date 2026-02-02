@@ -65,7 +65,8 @@ func startTestServer() (*grpc.Server, *bufconn.Listener) {
 	pb.RegisterAuthServiceServer(server, &AuthServiceServer{})
 
 	go func() {
-		if err := server.Serve(listener); err != nil && !errors.Is(err, grpc.ErrServerStopped) {
+		err := server.Serve(listener)
+		if err != nil && !errors.Is(err, grpc.ErrServerStopped) {
 			log.Fatalf("Server exited with error: %v", err)
 		}
 	}()
@@ -92,6 +93,7 @@ func TestAPIKeyAuth(t *testing.T) {
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	require.NoError(t, err)
+
 	defer conn.Close()
 
 	client := pb.NewAuthServiceClient(conn)

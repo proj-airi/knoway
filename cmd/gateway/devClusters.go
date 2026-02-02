@@ -46,10 +46,14 @@ var StaticClustersConfig = map[string]*clusters.Cluster{
 
 func StaticRegisterClusters(clusterDetails map[string]*clusters.Cluster, lifecycle bootkit.LifeCycle) error {
 	for _, c := range clusterDetails {
-		if err := clustermanager.UpsertAndRegisterCluster(c, lifecycle); err != nil {
+		err := clustermanager.UpsertAndRegisterCluster(c, lifecycle)
+		if err != nil {
 			return err
 		}
-		if err := routemanager.RegisterBaseRouteWithConfig(routemanager.InitDirectModelRoute(c.GetName()), lifecycle); err != nil {
+
+		err = routemanager.RegisterBaseRouteWithConfig(routemanager.InitDirectModelRoute(c.GetName()), lifecycle)
+
+		if err != nil {
 			return err
 		}
 	}

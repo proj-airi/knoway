@@ -76,6 +76,7 @@ func (r *ChatCompletionsResponse) processBytes(bs []byte, response *http.Respons
 	if err != nil {
 		return err
 	}
+
 	if errorResponse != nil {
 		r.Error = errorResponse
 	}

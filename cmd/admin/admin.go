@@ -100,19 +100,23 @@ func NewAdminServer(_ context.Context, staticListeners []*anypb.Any, addr string
 		OnStart: func(ctx context.Context) error {
 			slog.Info("Starting admin server ...", "addr", ln.Addr().String())
 
-			if err := server.Serve(ln); err != nil && err != http.ErrServerClosed {
+			err := server.Serve(ln)
+			if err != nil && err != http.ErrServerClosed {
 				return err
 			}
+
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
 			slog.Info("Stopping admin server ...")
 
-			if err := server.Shutdown(ctx); err != nil {
+			err := server.Shutdown(ctx)
+			if err != nil {
 				return err
 			}
 
 			slog.Info("Admin server stopped gracefully.")
+
 			return nil
 		},
 	})

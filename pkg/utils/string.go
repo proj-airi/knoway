@@ -30,9 +30,11 @@ func FromString[T any](str string) (T, error) { //nolint:gocyclo
 
 		return empty, nil
 	}
+
 	if str == "null" {
 		return empty, nil
 	}
+
 	if str == "<nil>" {
 		return empty, nil
 	}

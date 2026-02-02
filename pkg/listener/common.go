@@ -142,7 +142,8 @@ func pipeCompletionsStream(ctx context.Context, _ filters.RequestFilters, _ filt
 			}
 
 			// EOF, send last chunk
-			if err := handleChunk(chunk); err != nil {
+			err := handleChunk(chunk)
+			if err != nil {
 				// Ignore, terminate stream reading
 				return
 			}
@@ -154,9 +155,11 @@ func pipeCompletionsStream(ctx context.Context, _ filters.RequestFilters, _ filt
 		if chunk.IsEmpty() {
 			continue
 		}
+
 		if chunk.IsUsage() && !lo.IsNil(chunk.GetUsage()) {
 			rMeta.LLMUpstreamTokensUsage = mo.Some(lo.Must(object.AsLLMTokensUsage(chunk.GetUsage())))
 		}
+
 		if chunk.IsFirst() {
 			rMeta.UpstreamFirstValidChunkAt = time.Now()
 			rMeta.UpstreamResponseModel = chunk.GetModel()

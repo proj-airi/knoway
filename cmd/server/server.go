@@ -28,6 +28,7 @@ func StartController(ctx context.Context, lifecycle bootkit.LifeCycle, metricsAd
 	if metricsAddr == "" {
 		metricsAddr = "0"
 	}
+
 	if probeAddr == "" {
 		probeAddr = ":8081"
 	}
@@ -133,6 +134,7 @@ func StartController(ctx context.Context, lifecycle bootkit.LifeCycle, metricsAd
 	lifecycle.Append(bootkit.LifeCycleHook{
 		OnStart: func(ctx context.Context) error {
 			setupLog.Info("starting controller manager")
+
 			err := mgr.Start(managerCtx)
 
 			return err

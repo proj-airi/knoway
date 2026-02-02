@@ -32,6 +32,7 @@ func HandleRequest(ctx context.Context, clusterName string, request object.LLMRe
 		// Cluster will ensure that error will always be LLMError
 		return resp, err
 	}
+
 	if resp.GetError() != nil {
 		return resp, resp.GetError()
 	}

@@ -35,6 +35,7 @@ func (rl *RateLimiter) getShard(key string) *rateLimitShard {
 // checkBucketLocal Local rate limiting
 func (rl *RateLimiter) checkBucketLocal(key string, window time.Duration, limit int) (bool, error) {
 	shard := rl.getShard(key)
+
 	shard.mu.Lock()
 	defer shard.mu.Unlock()
 
@@ -104,6 +105,7 @@ func (rl *RateLimiter) updateBucket(shard *rateLimitShard, bucket *tokenBucket, 
 
 func (rl *RateLimiter) evictOldestBucket(shard *rateLimitShard, now time.Time) {
 	var oldestKey string
+
 	oldestTime := now
 
 	for k, t := range shard.lastAccessTime {
@@ -160,6 +162,7 @@ func (rl *RateLimiter) cleanupLoop(ctx context.Context) {
 
 func (rl *RateLimiter) cleanup() {
 	slog.DebugContext(context.Background(), "cleaning up expired rate limit buckets", rl.logCommonAttrs()...)
+
 	now := time.Now()
 
 	// Clean each shard
@@ -173,6 +176,7 @@ func (rl *RateLimiter) cleanup() {
 				delete(shard.lastAccessTime, key)
 			}
 		}
+
 		afterCount := len(shard.buckets)
 		slog.DebugContext(context.Background(), "cleaned shard", append(rl.logCommonAttrs(), slog.Int("shard", i), slog.Int("removed", beforeCount-afterCount))...)
 		shard.mu.Unlock()

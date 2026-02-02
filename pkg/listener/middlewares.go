@@ -51,6 +51,7 @@ func WithAccessLog(enable bool) Middleware {
 						slog.Uint64("llm_usage_completion_tokens", rMeta.LLMUpstreamTokensUsage.MustGet().GetCompletionTokens()),
 					)
 				}
+
 				if rMeta.LLMUpstreamImagesUsage.IsPresent() {
 					attrs = append(attrs,
 						slog.Uint64("llm_usage_images", uint64(len(rMeta.LLMUpstreamImagesUsage.MustGet().GetOutputImages()))),
@@ -62,6 +63,7 @@ func WithAccessLog(enable bool) Middleware {
 						slog.Duration("upstream_duration", rMeta.UpstreamRespondAt.Sub(rMeta.UpstreamRequestAt)),
 					)
 				}
+
 				if !rMeta.UpstreamFirstValidChunkAt.IsZero() {
 					attrs = append(attrs,
 						slog.Duration("upstream_first_chunk_duration", rMeta.UpstreamFirstValidChunkAt.Sub(rMeta.UpstreamRequestAt)),
@@ -199,6 +201,7 @@ func WithCancellable(cancellable *CancellableRequestMap) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
 		return func(writer http.ResponseWriter, request *http.Request) (any, error) {
 			ctx, cancel := context.WithCancel(request.Context())
+
 			cancellable.Add(request, cancel)
 			defer cancellable.Remove(request)
 

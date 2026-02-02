@@ -18,7 +18,8 @@ func TypeURLOrDie(obj proto.Message) string {
 
 func FromAny[T proto.Message](a *anypb.Any, prototype T) (T, error) {
 	newObj, _ := reflect.New(reflect.TypeOf(prototype).Elem()).Interface().(T)
-	if err := a.UnmarshalTo(newObj); err != nil {
+	err := a.UnmarshalTo(newObj)
+	if err != nil {
 		return newObj, err
 	}
 

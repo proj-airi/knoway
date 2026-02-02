@@ -176,6 +176,7 @@ func (b *BootKit) Start() {
 	go func() {
 		sigs := make(chan os.Signal, 2) //nolint:mnd
 		signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
 		cancelled := false
 
 		for range sigs {
@@ -186,6 +187,7 @@ func (b *BootKit) Start() {
 			}
 
 			b.selfCancel()
+
 			cancelled = true
 		}
 	}()

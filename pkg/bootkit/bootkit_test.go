@@ -272,24 +272,32 @@ func TestCallStartHooks(t *testing.T) {
 			LifeCycleHook{
 				OnStart: func(ctx context.Context) error {
 					time.Sleep(time.Second * 2)
+
 					startHookRan[0] = true
+
 					return nil
 				},
 				OnStop: func(ctx context.Context) error {
 					time.Sleep(time.Second * 2)
+
 					stopHookRan[0] = true
+
 					return nil
 				},
 			},
 			LifeCycleHook{
 				OnStart: func(ctx context.Context) error {
 					time.Sleep(time.Second * 2)
+
 					startHookRan[1] = true
+
 					return nil
 				},
 				OnStop: func(ctx context.Context) error {
 					time.Sleep(time.Second * 2)
+
 					stopHookRan[1] = true
+
 					return nil
 				},
 			},
@@ -357,6 +365,7 @@ func TestCallStopHooks(t *testing.T) {
 		t.Parallel()
 
 		var mu sync.Mutex
+
 		startHookRan := make([]bool, 2)
 		stopHookRan := make([]bool, 2)
 		hooks := []lifeCycler{
@@ -364,15 +373,21 @@ func TestCallStopHooks(t *testing.T) {
 				OnStart: func(ctx context.Context) error {
 					time.Sleep(time.Second * 2)
 					mu.Lock()
+
 					startHookRan[0] = true
+
 					mu.Unlock()
+
 					return nil
 				},
 				OnStop: func(ctx context.Context) error {
 					time.Sleep(time.Second * 2)
 					mu.Lock()
+
 					stopHookRan[0] = true
+
 					mu.Unlock()
+
 					return nil
 				},
 			},
@@ -380,15 +395,21 @@ func TestCallStopHooks(t *testing.T) {
 				OnStart: func(ctx context.Context) error {
 					time.Sleep(time.Second * 2)
 					mu.Lock()
+
 					startHookRan[1] = true
+
 					mu.Unlock()
+
 					return nil
 				},
 				OnStop: func(ctx context.Context) error {
 					time.Sleep(time.Second * 2)
 					mu.Lock()
+
 					stopHookRan[1] = true
+
 					mu.Unlock()
+
 					return nil
 				},
 			},
@@ -412,34 +433,47 @@ func TestCallStopHooks(t *testing.T) {
 		t.Parallel()
 
 		var mu sync.Mutex
+
 		startHookRan := make([]bool, 2)
 		stopHookRan := make([]bool, 2)
 		hooks := []lifeCycler{
 			LifeCycleHook{
 				OnStart: func(ctx context.Context) error {
 					mu.Lock()
+
 					startHookRan[0] = true
+
 					mu.Unlock()
+
 					return nil
 				},
 				OnStop: func(ctx context.Context) error {
 					mu.Lock()
+
 					stopHookRan[0] = true
+
 					mu.Unlock()
+
 					return errors.New("error")
 				},
 			},
 			LifeCycleHook{
 				OnStart: func(ctx context.Context) error {
 					mu.Lock()
+
 					startHookRan[1] = true
+
 					mu.Unlock()
+
 					return nil
 				},
 				OnStop: func(ctx context.Context) error {
 					mu.Lock()
+
 					stopHookRan[1] = false
+
 					mu.Unlock()
+
 					return nil
 				},
 			},
@@ -464,35 +498,48 @@ func TestCallStopHooks(t *testing.T) {
 		t.Parallel()
 
 		var mu sync.Mutex
+
 		startHookRan := make([]bool, 2)
 		stopHookRan := make([]bool, 2)
 		hooks := []lifeCycler{
 			LifeCycleHook{
 				OnStart: func(ctx context.Context) error {
 					mu.Lock()
+
 					startHookRan[0] = true
+
 					mu.Unlock()
+
 					return nil
 				},
 				OnStop: func(ctx context.Context) error {
 					time.Sleep(time.Second * 3)
 					mu.Lock()
+
 					stopHookRan[0] = true
+
 					mu.Unlock()
+
 					return nil
 				},
 			},
 			LifeCycleHook{
 				OnStart: func(ctx context.Context) error {
 					mu.Lock()
+
 					startHookRan[1] = true
+
 					mu.Unlock()
+
 					return nil
 				},
 				OnStop: func(ctx context.Context) error {
 					mu.Lock()
+
 					stopHookRan[1] = false
+
 					mu.Unlock()
+
 					return nil
 				},
 			},
@@ -517,35 +564,48 @@ func TestCallStopHooks(t *testing.T) {
 		t.Parallel()
 
 		var mu sync.Mutex
+
 		startHookRan := make([]bool, 2)
 		stopHookRan := make([]bool, 2)
 		hooks := []lifeCycler{
 			LifeCycleHook{
 				OnStart: func(ctx context.Context) error {
 					mu.Lock()
+
 					startHookRan[0] = true
+
 					mu.Unlock()
+
 					return nil
 				},
 				OnStop: func(ctx context.Context) error {
 					time.Sleep(time.Second * 3)
 					mu.Lock()
+
 					stopHookRan[0] = true
+
 					mu.Unlock()
+
 					return nil
 				},
 			},
 			LifeCycleHook{
 				OnStart: func(ctx context.Context) error {
 					mu.Lock()
+
 					startHookRan[1] = true
+
 					mu.Unlock()
+
 					return nil
 				},
 				OnStop: func(ctx context.Context) error {
 					mu.Lock()
+
 					stopHookRan[1] = false
+
 					mu.Unlock()
+
 					return nil
 				},
 			},
@@ -897,6 +957,7 @@ func TestBootkit_Stop(t *testing.T) {
 		bootkit := New()
 
 		var mu sync.Mutex
+
 		startCalled := false
 		stopCalled := false
 
@@ -904,15 +965,21 @@ func TestBootkit_Stop(t *testing.T) {
 			lifeCycle.Append(LifeCycleHook{
 				OnStart: func(ctx context.Context) error {
 					mu.Lock()
+
 					startCalled = true
+
 					mu.Unlock()
 					time.Sleep(time.Second * 2)
+
 					return nil
 				},
 				OnStop: func(ctx context.Context) error {
 					mu.Lock()
+
 					stopCalled = true
+
 					mu.Unlock()
+
 					return nil
 				},
 			})

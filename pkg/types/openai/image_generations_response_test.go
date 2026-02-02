@@ -27,6 +27,7 @@ func testServer(t *testing.T, handler http.Handler) (*http.Client, func(), func(
 	t.Helper()
 
 	const bufSize = 1024 * 1024
+
 	listener := bufconn.Listen(bufSize)
 
 	server := &http.Server{
@@ -152,9 +153,11 @@ func TestNewImageGenerationsResponse(t *testing.T) {
 			imageContent, err := os.ReadFile(xo.RelativePathOf(tt.imageFile))
 			require.NoError(t, err)
 
-			var responseBody []byte
-			var client *http.Client
-			var start, stop func()
+			var (
+				responseBody []byte
+				client       *http.Client
+				start, stop  func()
+			)
 
 			if tt.isURL {
 				client, start, stop = testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -164,6 +167,7 @@ func TestNewImageGenerationsResponse(t *testing.T) {
 					assert.NoError(t, err)
 				}))
 				go start()
+
 				defer stop()
 
 				responseBody, err = json.Marshal(map[string]any{
@@ -214,6 +218,7 @@ func TestNewImageGenerationsResponse(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Len(t, imageGenerationsResp.Images, 1)
+
 			if tt.isURL {
 				assert.Empty(t, imageGenerationsResp.Images[0].Base64JSON)
 				assert.Equal(t, tt.urlPath, imageGenerationsResp.Images[0].URL)

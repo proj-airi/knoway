@@ -66,8 +66,10 @@ func (e *BaseLLMError) MarshalJSON() ([]byte, error) {
 func (e *BaseLLMError) UnmarshalJSON(data []byte) error {
 	e.ErrorBody = new(BaseError)
 
-	var err error
-	var parsed map[string]any
+	var (
+		err    error
+		parsed map[string]any
+	)
 
 	err = json.Unmarshal(data, &parsed)
 	if err != nil {

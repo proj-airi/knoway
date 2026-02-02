@@ -139,6 +139,7 @@ func (c ClusterFilters) ForEachUpstreamRequestMarshaller(ctx context.Context, cl
 			return nil, err
 		}
 	}
+
 	if request == nil {
 		panic("ClusterFilterUpstreamRequestMarshaller iterated, but returned nil request or no filters found")
 	}

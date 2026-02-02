@@ -159,6 +159,7 @@ func TestChatCompletionStreamResponse_NextChunk(t *testing.T) {
 			chunk, err := stream.NextChunk()
 			if tc.wantError {
 				require.Error(t, err)
+
 				if tc.expectedError != nil {
 					assert.Equal(t, tc.expectedError, err)
 				}

@@ -52,7 +52,7 @@ func TestSetModel(t *testing.T) {
 
 	newMessages, ok := body["messages"].([]interface{})
 	require.True(t, ok)
-	assert.Equal(t, len(messages), len(newMessages))
+	assert.Len(t, newMessages, len(messages))
 
 	for i, msg := range messages {
 		newMessageMap, ok := newMessages[i].(map[string]interface{})

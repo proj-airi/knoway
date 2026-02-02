@@ -56,12 +56,14 @@ func init() {
 }
 
 func main() {
-	var metricsAddr string
-	var probeAddr string
-	var listenerAddr string
-	var adminAddr string
-	var configPath string
-	var staticClusterOnly bool
+	var (
+		metricsAddr       string
+		probeAddr         string
+		listenerAddr      string
+		adminAddr         string
+		configPath        string
+		staticClusterOnly bool
+	)
 
 	flag.StringVar(&listenerAddr, "gateway-listener-address", ":8080", "The address the gateway listener binds to.")
 	flag.StringVar(&adminAddr, "admin-listener-address", "127.0.0.1:9080", "The address the admin listener binds to.")
@@ -102,6 +104,7 @@ func main() {
 			slog.Error("Failed to load static clusters", "error", err)
 			return
 		}
+
 		if len(staticClusters) == 0 {
 			slog.Warn("No static clusters configured", "config", configPath)
 		}
@@ -159,6 +162,7 @@ func toClusterMap(staticCluster []map[string]interface{}) (map[string]*clusters.
 		if err := protoyaml.Unmarshal(bs, cluster); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal static cluster %d: %w", i, err)
 		}
+
 		if cluster.GetName() == "" {
 			return nil, fmt.Errorf("static cluster %d missing name", i)
 		}

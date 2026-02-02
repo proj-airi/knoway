@@ -26,8 +26,10 @@ type Error struct {
 }
 
 func (e *Error) UnmarshalJSON(data []byte) error {
-	var err error
-	var parsed map[string]any
+	var (
+		err    error
+		parsed map[string]any
+	)
 
 	err = json.Unmarshal(data, &parsed)
 	if err != nil {
@@ -38,6 +40,7 @@ func (e *Error) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return fmt.Errorf("failed to get code: %w", err)
 	}
+
 	if codeStr != scalarNullJSON && codeStr != scalarNilGolang {
 		e.Code = lo.ToPtr(codeStr)
 	}
@@ -46,6 +49,7 @@ func (e *Error) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return fmt.Errorf("failed to get param: %w", err)
 	}
+
 	if paramStr != scalarNullJSON && paramStr != scalarNilGolang {
 		e.Param = lo.ToPtr(paramStr)
 	}
@@ -59,6 +63,7 @@ func (e *Error) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return fmt.Errorf("failed to get message: %w", err)
 	}
+
 	if e.Message == "" {
 		e.Message = fmt.Sprintf("unknown error (empty message received from upstream): code: %s, type: %s, param: %s", lo.FromPtrOr(e.Code, ""), e.Type, lo.FromPtrOr(e.Param, ""))
 	}
@@ -83,6 +88,7 @@ func (e *ErrorResponse) appendCause(err error) *ErrorResponse {
 	if e.ErrorBody == nil {
 		e.ErrorBody = &Error{}
 	}
+
 	if e.ErrorBody.Message != "" {
 		e.ErrorBody.Message = fmt.Sprintf("%s: %s", e.ErrorBody.Message, err.Error())
 	} else {

@@ -161,6 +161,7 @@ func (a *AuthFilter) OnCompletionRequest(ctx context.Context, request object.LLM
 			slog.Debug("auth filter: user access model is denied", "user", authInfo.GetUserId(), "model", accessModel)
 			return filters.NewFailed(object.NewErrorModelAccessDenied(accessModel))
 		}
+
 		if !granted {
 			slog.Debug("auth filter: user can not access model", "user", authInfo.GetUserId(), "model", accessModel)
 			return filters.NewFailed(object.NewErrorModelNotFoundOrNotAccessible(accessModel))
@@ -194,6 +195,7 @@ func (a *AuthFilter) OnImageGenerationsRequest(ctx context.Context, request obje
 			slog.Debug("auth filter: user access model is denied", "user", authInfo.GetUserId(), "model", accessModel)
 			return filters.NewFailed(object.NewErrorModelAccessDenied(accessModel))
 		}
+
 		if !granted {
 			slog.Debug("auth filter: user can not access model", "user", authInfo.GetUserId(), "model", accessModel)
 			return filters.NewFailed(object.NewErrorModelNotFoundOrNotAccessible(accessModel))

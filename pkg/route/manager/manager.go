@@ -69,6 +69,7 @@ func RemoveMatchRoute(rName string) {
 	defer routeLock.Unlock()
 
 	delete(matchRouteRegistry, rName)
+
 	routes = mergeRoutes()
 
 	slog.Info("remove match route", "name", rName)
@@ -102,6 +103,7 @@ func RemoveBaseRoute(rName string) {
 	defer routeLock.Unlock()
 
 	delete(routeRegistry, rName)
+
 	routes = mergeRoutes()
 
 	slog.Info("remove base route", "name", rName)

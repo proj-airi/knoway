@@ -179,9 +179,11 @@ func (m *routeDefault) HandleRequest(ctx context.Context, request object.LLMRequ
 		if m.cfg.GetFallback() == nil {
 			return resp, err
 		}
+
 		if m.cfg.GetFallback().GetPostDelay() != nil {
 			time.Sleep(m.cfg.GetFallback().GetPostDelay().AsDuration())
 		}
+
 		if m.cfg.GetFallback().MaxRetries != nil {
 			if retriedCount >= lo.CoalesceOrEmpty(m.cfg.GetFallback().GetMaxRetries(), defaultRouteFallbackMaxRetries) {
 				return resp, err

@@ -22,6 +22,7 @@ func TestErrorUnmarshalJSON(t *testing.T) {
 		require.NotEmpty(t, errorJSON)
 
 		var e Error
+
 		err = e.UnmarshalJSON(errorJSON)
 		require.NoError(t, err)
 
@@ -47,6 +48,7 @@ func TestErrorUnmarshalJSON(t *testing.T) {
 			require.NotEmpty(t, errorJSON)
 
 			var e Error
+
 			err = e.UnmarshalJSON(errorJSON)
 			require.NoError(t, err)
 
@@ -72,6 +74,7 @@ func TestErrorUnmarshalJSON(t *testing.T) {
 		require.NotEmpty(t, errorJSON)
 
 		var e Error
+
 		err = e.UnmarshalJSON(errorJSON)
 		require.NoError(t, err)
 
@@ -96,6 +99,7 @@ func TestErrorResponseUnmarshalJSON(t *testing.T) {
 		require.NotEmpty(t, errorJSON)
 
 		var e ErrorResponse
+
 		err = e.UnmarshalJSON(errorJSON)
 		require.NoError(t, err)
 
@@ -121,6 +125,7 @@ func TestErrorResponseUnmarshalJSON(t *testing.T) {
 			require.NotEmpty(t, errorJSON)
 
 			var e ErrorResponse
+
 			err = e.UnmarshalJSON(errorJSON)
 			require.NoError(t, err)
 
@@ -146,6 +151,7 @@ func TestErrorResponseUnmarshalJSON(t *testing.T) {
 		require.NotEmpty(t, errorJSON)
 
 		var e ErrorResponse
+
 		err = e.UnmarshalJSON(errorJSON)
 		require.NoError(t, err)
 

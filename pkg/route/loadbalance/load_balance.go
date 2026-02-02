@@ -81,6 +81,7 @@ func (w *WeightedRoundRobin) Next(ctx context.Context, _ object.LLMRequest) stri
 	if len(w.servers) == 0 {
 		return ""
 	}
+
 	if len(w.servers) == 1 {
 		return w.servers[0].name
 	}
@@ -93,8 +94,12 @@ func (w *WeightedRoundRobin) Next(ctx context.Context, _ object.LLMRequest) stri
 	}
 
 	currentIndex := w.current.Load()
-	var currentWeight int32
-	var total int64
+
+	var (
+		currentWeight int32
+		total         int64
+	)
+
 	foundIdx := -1
 
 	for i := range w.servers {
@@ -158,6 +163,7 @@ func (w *WeightedLeastRequest) Next(ctx context.Context, request object.LLMReque
 	if len(w.servers) == 0 {
 		return ""
 	}
+
 	if len(w.servers) == 1 {
 		return w.servers[0].name
 	}

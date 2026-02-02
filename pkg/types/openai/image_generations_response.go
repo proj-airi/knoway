@@ -209,6 +209,7 @@ func (r *ImageGenerationsResponse) processBytes(ctx context.Context, bs []byte, 
 	if err != nil {
 		return err
 	}
+
 	if errorResponse != nil {
 		r.Error = errorResponse
 	}
@@ -223,8 +224,10 @@ func (r *ImageGenerationsResponse) resolveUsage(ctx context.Context, request obj
 	}
 
 	r.Usage.Images = lo.Map(r.Images, func(imageObject *ImageGenerationsImage, _ int) *ImageGenerationsUsageImage {
-		var width uint64
-		var height uint64
+		var (
+			width  uint64
+			height uint64
+		)
 
 		if imageGenerationRequest.Size != nil {
 			width = imageGenerationRequest.Size.Width

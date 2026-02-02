@@ -116,6 +116,7 @@ func TestWeightedLeastRequest_Next(t *testing.T) {
 
 	for range 100 {
 		defer lb.Done(context.TODO())
+
 		bak := lb.Next(context.TODO(), nil)
 
 		switch bak {

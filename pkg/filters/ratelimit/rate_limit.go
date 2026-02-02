@@ -119,9 +119,11 @@ func NewWithConfig(cfg *anypb.Any, lifecycle bootkit.LifeCycle) (filters.Request
 		OnStop: func(ctx context.Context) error {
 			slog.InfoContext(context.Background(), "stopping rate limiter", rl.logCommonAttrs()...)
 			rl.cancel()
+
 			if rl.redisClient != nil {
 				rl.redisClient.Close()
 			}
+
 			return nil
 		},
 	})

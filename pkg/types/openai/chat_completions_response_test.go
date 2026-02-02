@@ -143,9 +143,11 @@ func TestNewChatCompletionResponse(t *testing.T) {
 			if tc.expectedModel != "" {
 				assert.Equal(t, tc.expectedModel, response.GetModel())
 			}
+
 			if tc.expectedUsage != nil {
 				assert.Equal(t, tc.expectedUsage, response.GetUsage())
 			}
+
 			if tc.expectedError != nil {
 				assert.Equal(t, tc.expectedError, response.GetError())
 			}
