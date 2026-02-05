@@ -1,24 +1,46 @@
-FROM docker.m.daocloud.io/alpine:3.15 AS artifacts
+# Build the gateway binary
+FROM golang:1.25 AS builder
 
-ARG APP
 ARG TARGETOS
 ARG TARGETARCH
 
-COPY out/$TARGETOS/$TARGETARCH/$APP /files/app/${APP}
+WORKDIR /workspace
 
-FROM docker.m.daocloud.io/alpine:3.15
+# Copy the Go Modules manifests
+COPY go.mod go.mod
+COPY go.sum go.sum
+
+# Cache deps before building and copying source so that we don't need to re-download as much
+# and so that source changes don't invalidate our downloaded layer
+RUN go mod download
+
+# Copy the go source
+COPY cmd/ cmd/
+COPY api/ api/
+COPY internal/ internal/
+COPY pkg/ pkg/
+COPY config/ config/
+
+# Build
+# the GOARCH has not a default value to allow the binary be built according to the host where the command
+# was called. For example, if we call make docker-build in a local env which has the Apple Silicon M1 SO
+# the docker BUILDPLATFORM arg will be linux/arm64 when for Apple x86 it will be linux/amd64. Therefore,
+# by leaving it empty we can ensure that the container and binary shipped on it will have the same platform.
+RUN go env -w CGO_ENABLED=0
+RUN go env -w GOOS=${TARGETOS:-linux}
+RUN go env -w GOARCH=${TARGETARCH}
+
+RUN go build -a -ldflags "-s -w" -o /workspace/knoway-gateway ./cmd
+
+# Use distroless as minimal base image to package the binary
+# Refer to https://github.com/GoogleContainerTools/distroless for more details
+FROM gcr.io/distroless/static:nonroot
 
 WORKDIR /app
 
-ARG APP
-ARG TARGETOS
-ARG TARGETARCH
-
-ENV APP ${APP}
-
 ARG VERSION
-ENV VERSION ${VERSION}
+ENV VERSION=${VERSION}
 
-COPY --from=artifacts /files /
+COPY --from=builder /workspace/knoway-gateway /app/knoway-gateway
 
-CMD /app/${APP}
+ENTRYPOINT ["/app/knoway-gateway"]

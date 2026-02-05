@@ -131,7 +131,6 @@ controller-gen: $(CONTROLLER_GEN)
 $(CONTROLLER_GEN): $(LOCALBIN)
 	$(call go-install-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen,$(CONTROLLER_TOOLS_VERSION))
 
-
 .PHONY: manifests ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
 manifests: controller-gen
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:ignoreUnexportedFields=true \
@@ -181,7 +180,6 @@ define in_place_replace
 	yq eval $(1) $(2) -i
 endef
 
-
 helm:
 	@rm -rf dist/$(PROD_NAME) && mkdir -p dist/$(PROD_NAME)
 	@cp -rf manifests/knoway/. dist/$(PROD_NAME)
@@ -214,32 +212,6 @@ helm-render-check:
 		helm template $$c > /dev/null || exit 1; \
 	done
 
-.PHONY: license-lint
-license-lint:
-	scripts/verify-license.sh
-
-.PHONY: staticcheck
-staticcheck: license-lint helm-render-check
-	scripts/verify-staticcheck.sh
-
 .PHONY: gen-check
 gen-check:
 	scripts/gen-check.sh
-
-.PHONY: security-scanning
-security-scanning:
-	bash ./scripts/trivy.sh $(VULNEEABILITY_LEVEL) \
-	$(HUB)/$(PROD_NAME)/$(APP):$(VERSION)
-
-.PHONY: deploy-hydra-knoway
-deploy-hydra-knoway:
-	echo auto deploy-hydra...
-	@if [ -z "$${KUBE_CONFIG}" ]; then env; echo missing KUBE_CONFIG; exit 12; fi
-	helm --kubeconfig ${KUBE_CONFIG} upgrade --install --create-namespace -n hydra-system knoway oci://$(HUB)/$(PROD_NAME)/knoway \
-	--version=$(VERSION) \
-	--set global.imageRegistry=$(HUB) \
-	$$([ -f "$(CUSTOM_DEPLOY_HELM_SETTINGS_FILE)" ] && echo "--values $(CUSTOM_DEPLOY_HELM_SETTINGS_FILE)") \
-	--set global.debug=true \
-	--set config.auth_server.url="hydra-agent-agent-controller:8083" \
-	--set config.stats_server.url="hydra-agent-agent-controller:8083" \
-	$(CUSTOM_DEPLOY_HELM_SETTINGS)
