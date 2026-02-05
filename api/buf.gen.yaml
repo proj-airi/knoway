@@ -1,12 +1,9 @@
-version: v1
+version: v2
 plugins:
-  - name: go
+  - remote: buf.build/protocolbuffers/go:v1.34.0
     out: .
     opt: paths=source_relative
-#    opt: use_proto_names=true
-  - name: go-grpc
+
+  - remote: buf.build/grpc/go:v1.3.0
     out: .
     opt: paths=source_relative
-#  - name: golang-deepcopy
-#    out: .
-#    opt: paths=source_relative
