@@ -31,7 +31,37 @@ Some of the LLMs specific optimizations and features include:
 - `kubectl` version v1.11.3+.
 - Access to a Kubernetes v1.11.3+ cluster.
 
-### To Deploy on the cluster
+### Docker
+
+#### Local build
+
+You can build it with `docker buildx` for `linux/arm64` platform as follows:
+
+```shell
+docker buildx build \
+  --platform linux/arm64 \
+  --tag test.nekomeowww.local/proj-airi/knoway/self:latest \
+  --load \
+  -f ./Dockerfile \
+  .
+```
+
+and for test running, you can mount a local config file like this:
+
+```shell
+docker run \
+  --rm \
+  -it \
+  -p 8080:8080 \
+  -v $(pwd)/config/local.yaml:/etc/knoway/config.yaml \
+  test.nekomeowww.local/proj-airi/knoway/self:latest \
+  --static-cluster-only \
+  --config /etc/knoway/config.yaml
+```
+
+### Kubernetes Cluster
+
+#### To Deploy on the cluster
 
 ```console
 $ export VERSION=v0.0.0-xxxx
