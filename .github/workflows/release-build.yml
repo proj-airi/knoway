@@ -18,7 +18,7 @@ jobs:
       - uses: docker/metadata-action@v5
         id: meta
         with:
-          images: ghcr.io/${{ github.repository }}
+          images: ghcr.io/${{ github.repository }}/knoway-gateway
           flavor: |
             latest=true
           tags: |
