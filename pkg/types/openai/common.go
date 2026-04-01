@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
+	"github.com/samber/lo"
 
 	"knoway.dev/pkg/utils"
 )
@@ -67,11 +68,32 @@ func unmarshalErrorResponseFromParsedBody(body map[string]any, response *http.Re
 	// For general cases, errors will be returned as a map with "error" property
 	respErrMap := utils.GetByJSONPath[map[string]any](body, "{ .error }")
 	// For OpenRouter, endpoint not found errors will be returned as a string with "error" property
+	respErrMetadataRawString := utils.GetByJSONPath[map[string]any](body, "{ .error.metadata.raw }")
 	errorStringMap := utils.GetByJSONPath[string](body, "{ .error }")
 	// For vLLM, {"object":"error", "message":"error message"} would be returned when error occurs
 	objectString := utils.GetByJSONPath[string](body, "{ .object }")
 
-	if len(respErrMap) > 0 {
+	// OpenRouter
+	if len(respErrMap) > 0 || len(respErrMetadataRawString) > 0 {
+		message := utils.GetByJSONPath[string](respErrMetadataRawString, "{ .error.message }")
+		param := utils.GetByJSONPath[string](respErrMetadataRawString, "{ .error.param }")
+		code := utils.GetByJSONPath[*string](respErrMetadataRawString, "{ .error.code }")
+
+		respErr, err := utils.FromMap[ErrorResponse](respErrMap)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal error: %w", err)
+		}
+
+		respErr.ErrorBody.Message = message
+		respErr.ErrorBody.Param = lo.ToPtr(param)
+		respErr.ErrorBody.Code = code
+
+		respErr.Status = response.StatusCode
+		respErr.FromUpstream = true
+		respErr.UpstreamErrorBody = string(bs)
+
+		return respErr, nil
+	} else if len(respErrMap) > 0 {
 		respErr, err := utils.FromMap[ErrorResponse](respErrMap)
 		if err != nil {
 			return nil, fmt.Errorf("failed to unmarshal error: %w", err)
@@ -79,6 +101,7 @@ func unmarshalErrorResponseFromParsedBody(body map[string]any, response *http.Re
 
 		respErr.Status = response.StatusCode
 		respErr.FromUpstream = true
+		respErr.UpstreamErrorBody = string(bs)
 
 		return respErr, nil
 	} else if errorStringMap != "" {
@@ -97,6 +120,7 @@ func unmarshalErrorResponseFromParsedBody(body map[string]any, response *http.Re
 		}
 
 		respErr.FromUpstream = true
+		respErr.UpstreamErrorBody = string(bs)
 
 		return respErr, nil
 	} else if response.StatusCode >= 400 && response.StatusCode < 600 {
@@ -116,6 +140,7 @@ func unmarshalErrorResponseFromParsedBody(body map[string]any, response *http.Re
 				}
 
 				respErr.FromUpstream = true
+				respErr.UpstreamErrorBody = string(bs)
 
 				return respErr, nil
 			}
@@ -135,6 +160,7 @@ func unmarshalErrorResponseFromParsedBody(body map[string]any, response *http.Re
 			}
 
 			respErr.FromUpstream = true
+			respErr.UpstreamErrorBody = string(bs)
 
 			return respErr, nil
 		}

@@ -74,10 +74,11 @@ func (e *Error) UnmarshalJSON(data []byte) error {
 var _ object.LLMError = (*ErrorResponse)(nil)
 
 type ErrorResponse struct { //nolint:errname
-	Status       int    `json:"-"`
-	FromUpstream bool   `json:"-"`
-	ErrorBody    *Error `json:"error"`
-	Cause        error  `json:"-"`
+	Status            int    `json:"-"`
+	FromUpstream      bool   `json:"-"`
+	UpstreamErrorBody string `json:"-"`
+	ErrorBody         *Error `json:"error"`
+	Cause             error  `json:"-"`
 }
 
 func (e *ErrorResponse) Error() string {
