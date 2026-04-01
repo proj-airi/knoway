@@ -28,6 +28,8 @@ type ChatCompletionsResponse struct {
 
 func NewChatCompletionResponse(request object.LLMRequest, response *http.Response, reader *bufio.Reader) (*ChatCompletionsResponse, error) {
 	resp := new(ChatCompletionsResponse)
+	resp.request = request
+	resp.outgoingResponse = response
 
 	buffer := new(bytes.Buffer)
 
@@ -40,9 +42,6 @@ func NewChatCompletionResponse(request object.LLMRequest, response *http.Respons
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w, body: %s", err, buffer.String())
 	}
-
-	resp.request = request
-	resp.outgoingResponse = response
 
 	return resp, nil
 }
