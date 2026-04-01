@@ -60,9 +60,23 @@ func ResponseHandler() func(resp any, err error, writer http.ResponseWriter, req
 				"code", openAIError.ErrorBody.Code,
 				"message", openAIError.ErrorBody.Message,
 				"type", openAIError.ErrorBody.Type,
+				"upstream_body", openAIError.UpstreamErrorBody,
+				"cluster", rMeta.SelectedCluster.OrEmpty(),
+				"request_model", rMeta.RequestModel,
+				"upstream_request_model", rMeta.UpstreamRequestModel,
+				"upstream_response_model", rMeta.UpstreamResponseModel,
 			)
 		} else if openAIError.Status >= http.StatusInternalServerError {
-			slog.Error("failed to handle request", "error", openAIError, "cause", openAIError.Cause, "source_error", err.Error())
+			slog.Error("failed to handle request",
+				"error", openAIError,
+				"cause", openAIError.Cause,
+				"source_error", err.Error(),
+				"upstream_body", openAIError.UpstreamErrorBody,
+				"cluster", rMeta.SelectedCluster.OrEmpty(),
+				"request_model", rMeta.RequestModel,
+				"upstream_request_model", rMeta.UpstreamRequestModel,
+				"upstream_response_model", rMeta.UpstreamResponseModel,
+			)
 		}
 
 		rMeta.StatusCode = openAIError.Status
