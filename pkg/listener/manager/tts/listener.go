@@ -75,6 +75,7 @@ func (l *OpenAITextToSpeechListener) RegisterRoutes(mux *mux.Router) error {
 	)
 
 	mux.HandleFunc("/v1/audio/speech", listener.HTTPHandlerFunc(middlewares(listener.CommonListenerHandler(l.filters, l.reversedFilters, l.unmarshalTextToSpeechRequestToLLMRequest))))
+	mux.HandleFunc("/v1/audio/voices", listener.HTTPHandlerFunc(middlewares(l.listVoices)))
 
 	return nil
 }

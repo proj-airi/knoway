@@ -56,6 +56,14 @@ func ListModels() []*v1alpha1.Cluster {
 	return clusterRegister.ListModels()
 }
 
+func ListTTSClusters() []*v1alpha1.Cluster {
+	if clusterRegister == nil {
+		return nil
+	}
+
+	return clusterRegister.ListTTSClusters()
+}
+
 func init() { //nolint:gochecknoinits
 	if clusterRegister == nil {
 		InitClusterRegister()
@@ -131,6 +139,20 @@ func (cr *Register) ListModels() []*v1alpha1.Cluster {
 	clusters := make([]*v1alpha1.Cluster, 0, len(cr.clusters))
 	for _, cluster := range cr.clustersDetails {
 		clusters = append(clusters, cluster)
+	}
+
+	return clusters
+}
+
+func (cr *Register) ListTTSClusters() []*v1alpha1.Cluster {
+	cr.clustersLock.RLock()
+	defer cr.clustersLock.RUnlock()
+
+	clusters := make([]*v1alpha1.Cluster, 0)
+	for _, cluster := range cr.clustersDetails {
+		if cluster.GetType() == v1alpha1.ClusterType_SPEECH_GENERATION {
+			clusters = append(clusters, cluster)
+		}
 	}
 
 	return clusters
