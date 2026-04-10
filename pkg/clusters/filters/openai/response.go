@@ -71,17 +71,27 @@ func (f *responseHandler) UnmarshalResponseBody(ctx context.Context, cluster *v1
 		if rawResponse.StatusCode >= http.StatusBadRequest {
 			tryReadBody := new(bytes.Buffer)
 
-			_, err := tryReadBody.ReadFrom(rawResponse.Body)
+			_, err := tryReadBody.ReadFrom(reader)
 			if err != nil {
 				return nil, fmt.Errorf("failed to read body: %w", err)
 			}
 
-			rawResponse.Body.Close()
+			_ = rawResponse.Body.Close()
 			rawResponse.Body = io.NopCloser(bytes.NewBuffer(tryReadBody.Bytes()))
 
 			errResp, err := openai.ParseErrorResponse(rawResponse, tryReadBody.Bytes())
 			if err != nil || errResp == nil {
-				return nil, fmt.Errorf("upstream returned status code %d with body %s", rawResponse.StatusCode, tryReadBody.String())
+				upstreamBody := tryReadBody.String()
+				errMsg := fmt.Sprintf("upstream returned status code %d", rawResponse.StatusCode)
+				if upstreamBody != "" {
+					errMsg += " with body " + upstreamBody
+				}
+
+				newErr := openai.NewErrorBadGateway().WithMessage(errMsg)
+				newErr.FromUpstream = true
+				newErr.UpstreamErrorBody = upstreamBody
+
+				return nil, newErr
 			}
 
 			return nil, errResp
@@ -95,15 +105,25 @@ func (f *responseHandler) UnmarshalResponseBody(ctx context.Context, cluster *v1
 	if rawResponse.StatusCode >= http.StatusBadRequest {
 		tryReadBody := new(bytes.Buffer)
 
-		_, err := tryReadBody.ReadFrom(rawResponse.Body)
+		_, err := tryReadBody.ReadFrom(reader)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read body: %w", err)
 		}
 
-		rawResponse.Body.Close()
+		_ = rawResponse.Body.Close()
 		rawResponse.Body = io.NopCloser(bytes.NewBuffer(tryReadBody.Bytes()))
 
-		return nil, fmt.Errorf("upstream returned status code %d with body %s", rawResponse.StatusCode, tryReadBody.String())
+		upstreamBody := tryReadBody.String()
+		errMsg := fmt.Sprintf("upstream returned status code %d", rawResponse.StatusCode)
+		if upstreamBody != "" {
+			errMsg += " with body " + upstreamBody
+		}
+
+		newErr := openai.NewErrorBadGateway().WithMessage(errMsg)
+		newErr.FromUpstream = true
+		newErr.UpstreamErrorBody = upstreamBody
+
+		return nil, newErr
 	}
 
 	return nil, fmt.Errorf("unsupported content type %s", contentType)
