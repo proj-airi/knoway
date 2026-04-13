@@ -73,8 +73,9 @@ func unmarshalErrorResponseFromParsedBody(body map[string]any, response *http.Re
 	// For vLLM, {"object":"error", "message":"error message"} would be returned when error occurs
 	objectString := utils.GetByJSONPath[string](body, "{ .object }")
 
-	// OpenRouter
-	if len(respErrMap) > 0 || len(respErrMetadataRawString) > 0 {
+	// OpenRouter — only take this path when metadata.raw is present, otherwise
+	// plain OpenAI-style {"error":{...}} responses get hijacked here and lose their fields.
+	if len(respErrMetadataRawString) > 0 {
 		message := utils.GetByJSONPath[string](respErrMetadataRawString, "{ .error.message }")
 		param := utils.GetByJSONPath[string](respErrMetadataRawString, "{ .error.param }")
 		code := utils.GetByJSONPath[*string](respErrMetadataRawString, "{ .error.code }")
