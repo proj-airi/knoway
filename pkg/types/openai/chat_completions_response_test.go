@@ -86,7 +86,10 @@ func TestNewChatCompletionResponse(t *testing.T) {
 					Message: "upstream error: endpoint not found",
 				},
 				FromUpstream: true,
-				Cause:        errors.New("unknown error"),
+				UpstreamErrorBody: `{
+                "error": "endpoint not found"
+            }`,
+				Cause: errors.New("unknown error"),
 			},
 		},
 		{
@@ -108,7 +111,13 @@ func TestNewChatCompletionResponse(t *testing.T) {
 					Type:    "BadRequestError",
 				},
 				FromUpstream: true,
-				Cause:        nil,
+				UpstreamErrorBody: `{
+				"object": "error",
+				"message": "This model's maximum context length is 4096 tokens. However, you requested 4108 tokens (3108 in the messages, 1000 in the completion). Please reduce the length of the messages or completion.",
+				"type": "BadRequestError", "param": null,
+				"code":400
+			}`,
+				Cause: nil,
 			},
 		},
 		{
