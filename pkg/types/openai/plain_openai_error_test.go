@@ -14,7 +14,7 @@ import (
 func TestUpstreamPlainOpenAIError(t *testing.T) {
 	body := `{"error":{"message":"This model is not available in your region.","code":403}}`
 	resp := &http.Response{
-		StatusCode: 403,
+		StatusCode: http.StatusForbidden,
 		Body:       io.NopCloser(bytes.NewBufferString(body)),
 		Request:    &http.Request{URL: &url.URL{Path: "/v1/chat/completions"}},
 	}
