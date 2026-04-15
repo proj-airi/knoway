@@ -1,6 +1,7 @@
 package tts
 
 import (
+	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -15,7 +16,8 @@ func TestListVoicesForCluster_OpenAI(t *testing.T) {
 		Provider: v1alpha1.ClusterProvider_OPEN_AI_V1_SPEECH,
 	}
 
-	voices, err := listVoicesForCluster(cluster)
+	req := httptest.NewRequest("GET", "/", nil)
+	voices, err := listVoicesForCluster(req, cluster)
 	require.NoError(t, err)
 	assert.Len(t, voices, 9)
 
@@ -24,29 +26,34 @@ func TestListVoicesForCluster_OpenAI(t *testing.T) {
 
 	for i, v := range voices {
 		gotIDs[i] = v.ID
-		assert.Equal(t, v1alpha1.ClusterProvider_OPEN_AI_V1_SPEECH.String(), v.Provider)
+		assert.NotEmpty(t, v.PreviewAudioURL, "preview URL should be populated")
+		assert.NotEmpty(t, v.Languages, "languages should be populated")
 	}
 
 	assert.ElementsMatch(t, expectedIDs, gotIDs)
 }
 
-func TestListVoicesForCluster_UnsupportedProvider(t *testing.T) {
+func TestListVoicesForCluster_Unimplemented(t *testing.T) {
+	// Koemotion returns nil voices because unspeech hasn't implemented listing yet;
+	// knoway silently skips such clusters rather than surfacing the error.
 	cluster := &v1alpha1.Cluster{
-		Name:     "test-deepgram",
-		Provider: v1alpha1.ClusterProvider_DEEPGRAM_WEBSOCKET_V1,
+		Name:     "test-koemotion",
+		Provider: v1alpha1.ClusterProvider_KOEMOTION_V1,
 	}
 
-	voices, err := listVoicesForCluster(cluster)
+	req := httptest.NewRequest("GET", "/", nil)
+	voices, err := listVoicesForCluster(req, cluster)
+	// Default branch returns (nil, nil) for unknown/unmapped providers.
 	require.NoError(t, err)
 	assert.Empty(t, voices)
 }
 
-func TestExtractRegionFromURL(t *testing.T) {
+func TestMicrosoftRegion(t *testing.T) {
 	tests := []struct {
-		name        string
-		url         string
-		wantRegion  string
-		wantErr     bool
+		name       string
+		url        string
+		wantRegion string
+		wantErr    bool
 	}{
 		{
 			name:       "eastasia region",
@@ -59,7 +66,7 @@ func TestExtractRegionFromURL(t *testing.T) {
 			wantRegion: "westus2",
 		},
 		{
-			name:    "invalid URL with no dot in hostname",
+			name:    "invalid URL",
 			url:     "://invalid-url",
 			wantErr: true,
 		},
@@ -67,7 +74,7 @@ func TestExtractRegionFromURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			region, err := extractRegionFromURL(tt.url)
+			region, err := microsoftRegion(tt.url)
 			if tt.wantErr {
 				require.Error(t, err)
 				return

@@ -1,15 +1,20 @@
 package tts
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
 	"sort"
 	"strings"
 
+	"github.com/moeru-ai/unspeech/pkg/backend/alibaba"
+	"github.com/moeru-ai/unspeech/pkg/backend/deepgram"
+	"github.com/moeru-ai/unspeech/pkg/backend/elevenlabs"
+	"github.com/moeru-ai/unspeech/pkg/backend/microsoft"
+	"github.com/moeru-ai/unspeech/pkg/backend/openai"
+	"github.com/moeru-ai/unspeech/pkg/backend/types"
+	"github.com/moeru-ai/unspeech/pkg/backend/volcengine"
 	"github.com/samber/lo"
 
 	v1alpha1 "knoway.dev/api/clusters/v1alpha1"
@@ -18,132 +23,84 @@ import (
 	"knoway.dev/pkg/metadata"
 )
 
-type Voice struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Provider string `json:"provider"`
-	Locale   string `json:"locale,omitempty"`
-	Gender   string `json:"gender,omitempty"`
-}
-
-type VoicesResponse struct {
-	Object string  `json:"object"`
-	Data   []Voice `json:"data"`
-}
-
-// Hardcoded OpenAI TTS voices
-var openAIVoices = []Voice{
-	{ID: "alloy", Name: "Alloy"},
-	{ID: "ash", Name: "Ash"},
-	{ID: "coral", Name: "Coral"},
-	{ID: "echo", Name: "Echo"},
-	{ID: "fable", Name: "Fable"},
-	{ID: "nova", Name: "Nova"},
-	{ID: "onyx", Name: "Onyx"},
-	{ID: "sage", Name: "Sage"},
-	{ID: "shimmer", Name: "Shimmer"},
-}
-
-type microsoftVoice struct {
-	ShortName   string `json:"ShortName"`
-	DisplayName string `json:"DisplayName"`
-	Gender      string `json:"Gender"`
-	Locale      string `json:"Locale"`
-}
-
-// listMicrosoftVoices calls the Microsoft cognitive services voices list API.
-func listMicrosoftVoices(region string, subscriptionKey string) ([]Voice, error) {
-	voicesURL := fmt.Sprintf("https://%s.tts.speech.microsoft.com/cognitiveservices/voices/list", region)
-
-	req, err := http.NewRequest(http.MethodGet, voicesURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+// headerValue returns the first matching header value from a cluster's upstream config.
+// Keys are matched case-insensitively because cluster CRDs don't canonicalise them.
+func headerValue(cluster *v1alpha1.Cluster, key string) string {
+	for _, h := range cluster.GetUpstream().GetHeaders() {
+		if strings.EqualFold(h.GetKey(), key) {
+			return h.GetValue()
+		}
 	}
 
-	req.Header.Set("Ocp-Apim-Subscription-Key", subscriptionKey)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch voices: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("unexpected status %d: %s", resp.StatusCode, string(body))
-	}
-
-	var msVoices []microsoftVoice
-	if err := json.NewDecoder(resp.Body).Decode(&msVoices); err != nil {
-		return nil, fmt.Errorf("failed to decode voices: %w", err)
-	}
-
-	voices := make([]Voice, 0, len(msVoices))
-	for _, v := range msVoices {
-		voices = append(voices, Voice{
-			ID:       v.ShortName,
-			Name:     v.DisplayName,
-			Provider: v1alpha1.ClusterProvider_MICROSOFT_SPEECH_SERVICE_V1.String(),
-			Locale:   v.Locale,
-			Gender:   v.Gender,
-		})
-	}
-
-	return voices, nil
+	return ""
 }
 
-// extractRegionFromURL extracts region from a Microsoft TTS upstream URL.
-// Expected format: https://{region}.tts.speech.microsoft.com/cognitiveservices/v1
-func extractRegionFromURL(upstreamURL string) (string, error) {
+// bearerToken strips a "Bearer " prefix from an Authorization header value.
+func bearerToken(cluster *v1alpha1.Cluster) string {
+	return strings.TrimPrefix(headerValue(cluster, "Authorization"), "Bearer ")
+}
+
+// microsoftRegion extracts the Azure region subdomain from an upstream URL
+// shaped like https://{region}.tts.speech.microsoft.com/...
+func microsoftRegion(upstreamURL string) (string, error) {
 	u, err := url.Parse(upstreamURL)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse upstream URL: %w", err)
+		return "", fmt.Errorf("parse upstream URL: %w", err)
 	}
 
-	// Host looks like "{region}.tts.speech.microsoft.com"
-	parts := strings.SplitN(u.Hostname(), ".", 2)
-	if len(parts) < 2 {
+	host, _, _ := strings.Cut(u.Hostname(), ".")
+	if host == "" {
 		return "", fmt.Errorf("unexpected hostname format: %s", u.Hostname())
 	}
 
-	return parts[0], nil
+	return host, nil
 }
 
-// listVoicesForCluster returns voices available for a given cluster based on its provider.
-func listVoicesForCluster(cluster *v1alpha1.Cluster) ([]Voice, error) {
+// listVoicesForCluster dispatches to the right unspeech provider for this cluster's upstream.
+// The cluster config supplies credentials; unspeech owns the provider-specific fetch+mapping.
+func listVoicesForCluster(request *http.Request, cluster *v1alpha1.Cluster) ([]types.Voice, error) {
+	ctx := request.Context()
+
 	switch cluster.GetProvider() {
 	case v1alpha1.ClusterProvider_OPEN_AI, v1alpha1.ClusterProvider_OPEN_AI_V1_SPEECH:
-		provider := cluster.GetProvider().String()
-		voices := make([]Voice, len(openAIVoices))
-		copy(voices, openAIVoices)
-		for i := range voices {
-			voices[i].Provider = provider
-		}
-
-		return voices, nil
+		return openai.ListVoices(ctx)
 
 	case v1alpha1.ClusterProvider_MICROSOFT_SPEECH_SERVICE_V1:
-		upstreamURL := cluster.GetUpstream().GetUrl()
-
-		region, err := extractRegionFromURL(upstreamURL)
+		region, err := microsoftRegion(cluster.GetUpstream().GetUrl())
 		if err != nil {
-			return nil, fmt.Errorf("failed to extract region: %w", err)
+			return nil, err
 		}
 
-		var subscriptionKey string
-		for _, h := range cluster.GetUpstream().GetHeaders() {
-			if h.GetKey() == "Ocp-Apim-Subscription-Key" {
-				subscriptionKey = h.GetValue()
-
-				break
-			}
+		key := headerValue(cluster, "Ocp-Apim-Subscription-Key")
+		if key == "" {
+			key = bearerToken(cluster)
 		}
 
-		if subscriptionKey == "" {
-			return nil, fmt.Errorf("missing Ocp-Apim-Subscription-Key in upstream headers")
+		return microsoft.ListVoices(ctx, microsoft.VoicesCredentials{
+			Region:          region,
+			SubscriptionKey: key,
+		})
+
+	case v1alpha1.ClusterProvider_ELEVEN_LABS_V1:
+		apiKey := headerValue(cluster, "xi-api-key")
+		if apiKey == "" {
+			apiKey = bearerToken(cluster)
 		}
 
-		return listMicrosoftVoices(region, subscriptionKey)
+		return elevenlabs.ListVoices(ctx, elevenlabs.VoicesCredentials{APIKey: apiKey})
+
+	case v1alpha1.ClusterProvider_DEEPGRAM_WEBSOCKET_V1:
+		apiKey := bearerToken(cluster)
+		// Deepgram clusters may carry the key as "Authorization: Token xxx" instead of Bearer.
+		apiKey = strings.TrimPrefix(apiKey, "Token ")
+
+		return deepgram.ListVoices(ctx, deepgram.VoicesCredentials{APIKey: apiKey})
+
+	case v1alpha1.ClusterProvider_ALIBABA_COSY_VOICE_SERVICE:
+		return alibaba.ListVoices(ctx)
+
+	case v1alpha1.ClusterProvider_VOLCENGINE_SEED_SPEECH_V1:
+		return volcengine.ListVoices(ctx)
 
 	default:
 		return nil, nil
@@ -166,7 +123,7 @@ func (l *OpenAITextToSpeechListener) listVoices(_ http.ResponseWriter, request *
 
 	if rMeta.EnabledAuthFilter {
 		if rMeta.AuthInfo != nil {
-			clusters = lo.Filter(clusters, func(item *v1alpha1.Cluster, index int) bool {
+			clusters = lo.Filter(clusters, func(item *v1alpha1.Cluster, _ int) bool {
 				return auth.CanAccessModel(item.GetName(), rMeta.AuthInfo.GetAllowModels(), rMeta.AuthInfo.GetDenyModels())
 			})
 		}
@@ -176,22 +133,27 @@ func (l *OpenAITextToSpeechListener) listVoices(_ http.ResponseWriter, request *
 		return strings.Compare(clusters[i].GetName(), clusters[j].GetName()) < 0
 	})
 
-	// Aggregate voices from all clusters
-	allVoices := make([]Voice, 0)
+	// Aggregate voices from all clusters into unspeech's rich schema.
+	allVoices := make([]types.Voice, 0)
 
 	for _, c := range clusters {
-		voices, err := listVoicesForCluster(c)
+		voices, err := listVoicesForCluster(request, c)
 		if err != nil {
 			slog.Error("failed to list voices for cluster", "cluster", c.GetName(), "error", err)
 
 			continue
 		}
 
+		// Align CompatibleModels with this cluster's knoway name so the frontend's
+		// "does this voice support the selected model?" filter matches what
+		// listModels() returns. unspeech sets upstream-specific values like "v1"
+		// that don't correspond to any knoway cluster id.
+		for i := range voices {
+			voices[i].CompatibleModels = []string{c.GetName()}
+		}
+
 		allVoices = append(allVoices, voices...)
 	}
 
-	return VoicesResponse{
-		Object: "list",
-		Data:   allVoices,
-	}, nil
+	return types.ListVoicesResponse{Voices: allVoices}, nil
 }
